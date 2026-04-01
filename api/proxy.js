@@ -4,7 +4,6 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const target = searchParams.get('url');
 
-  // Only allow HTTP audio stream URLs
   if (!target || !/^http:\/\//i.test(target)) {
     return new Response('Bad Request: only http:// URLs accepted', { status: 400 });
   }
@@ -14,7 +13,6 @@ export default async function handler(req) {
     'Accept': '*/*',
   };
 
-  // Forward Range header so seeking/buffering works
   const range = req.headers.get('range');
   if (range) upstreamHeaders['Range'] = range;
 
@@ -30,10 +28,7 @@ export default async function handler(req) {
     const contentLength = upstream.headers.get('content-length');
     if (contentLength) headers.set('Content-Length', contentLength);
 
-    return new Response(upstream.body, {
-      status: upstream.status,
-      headers,
-    });
+    return new Response(upstream.body, { status: upstream.status, headers });
   } catch (e) {
     return new Response('Proxy error: ' + e.message, { status: 502 });
   }
