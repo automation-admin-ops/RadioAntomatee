@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radio Antomatee</title>
+  <meta name="description" content="Internetowe radio — Polskie i zagraniczne stacje na żywo." />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: "Trebuchet MS", "Gill Sans MT", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif;
+      background: #f5f0ea;
+      color: #1c1512;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────── */
+
+    #shell {
+      position: absolute;
+      inset: 0;
+      padding: 14px;
+    }
+
+    #header {
+      position: absolute;
+      left: 14px; right: 14px; top: 14px;
+      height: 80px;
+      background: #ffffff;
+      border-radius: 18px;
+      border: 1px solid #e5ddd4;
+      box-shadow: 0 2px 16px rgba(80, 50, 20, .09);
+      padding: 0 20px;
+    }
+
+    #main {
+      position: absolute;
+      left: 14px; right: 14px;
+      top: 108px; bottom: 14px;
+    }
+
+    #leftPanel {
+      position: absolute;
+      left: 0; top: 0; bottom: 0; right: 354px;
+      background: #ffffff;
+      border-radius: 18px;
+      border: 1px solid #e5ddd4;
+      box-shadow: 0 2px 16px rgba(80, 50, 20, .09);
+      overflow: hidden;
+    }
+
+    #rightPanel {
+      position: absolute;
+      width: 338px;
+      right: 0; top: 0; bottom: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: #d8d0c8 transparent;
+    }
+    #rightPanel::-webkit-scrollbar { width: 5px; }
+    #rightPanel::-webkit-scrollbar-thumb { background: #d8d0c8; border-radius: 3px; }
+
+    /* ── HEADER ─────────────────────────────────────── */
+
+    .brand {
+      float: left;
+      width: 220px;
+      padding-top: 15px;
+    }
+
+    .brandTitle {
+      font-family: Georgia, "Book Antiqua", "Palatino Linotype", serif;
+      font-size: 22px;
+      font-weight: bold;
+      color: #1c1512;
+      letter-spacing: -.4px;
+      line-height: 1;
+    }
+    .brandTitle em { color: #bf5827; font-style: normal; }
+
+    .brandSub {
+      font-size: 11px;
+      color: #9a8e84;
+      margin-top: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 210px;
+    }
+
+    .toolbar {
+      float: right;
+      text-align: right;
+      padding-top: 11px;
+    }
+
+    .statusRow {
+      font-size: 11px;
+      color: #9a8e84;
+      margin-bottom: 6px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-right: 5px;
+      background: #c5bbb5;
+      transition: background .3s;
+    }
+    .ok   { background: #5cb87a; }
+    .warn { background: #e0a030; }
+    .bad  { background: #d85040; }
+
+    .controlsRow { white-space: nowrap; }
+
+    /* ── BUTTONS ─────────────────────────────────────── */
+
+    .btn {
+      display: inline-block;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 7px 13px;
+      border: 1px solid #ddd5cb;
+      background: #f8f3ee;
+      color: #3a2e26;
+      margin-left: 4px;
+      transition: background .13s, border-color .13s;
+      line-height: 1.2;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .btn:hover  { background: #eee5dc; border-color: #c9bfb4; }
+    .btn:active { transform: translateY(1px); }
+
+    .btnPlay {
+      background: #bf5827;
+      border-color: #bf5827;
+      color: #fff;
+      font-weight: bold;
+      padding: 7px 22px;
+    }
+    .btnPlay:hover { background: #a34820; border-color: #a34820; }
+
+    .btnResume {
+      background: #2e9e58;
+      border-color: #2e9e58;
+      color: #fff;
+      font-weight: bold;
+      padding: 7px 22px;
+    }
+    .btnResume:hover { background: #24834a; border-color: #24834a; }
+
+    .btnStop {
+      background: #fff0ec;
+      border-color: #e8ccc4;
+      color: #8a3820;
+    }
+    .btnStop:hover { background: #fde0d8; border-color: #d4a898; }
+
+    .btnWide {
+      display: block;
+      width: 100%;
+      margin: 6px 0 0 0;
+      text-align: left;
+      padding: 9px 13px;
+    }
+
+    /* ── VOLUME ─────────────────────────────────────── */
+
+    .volWrap {
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 10px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd5cb;
+      background: #f8f3ee;
+      font-size: 12px;
+      color: #9a8e84;
+    }
+
+    .volInput {
+      width: 40px;
+      padding: 3px 4px;
+      margin-left: 5px;
+      border-radius: 7px;
+      border: 1px solid #ddd5cb;
+      background: #fff;
+      color: #1c1512;
+      text-align: center;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    .volInput:focus { border-color: #bf5827; }
+
+    .miniBtn {
+      min-width: 24px;
+      padding: 3px 0;
+      border-radius: 7px;
+      margin-left: 4px;
+      font-size: 14px;
+      line-height: 1;
+      text-align: center;
+    }
+
+    /* ── LEFT PANEL: FILTERS ─────────────────────────── */
+
+    #filters {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 110px;
+      padding: 13px 14px;
+      background: #faf6f1;
+      border-bottom: 1px solid #ece5db;
+    }
+
+    .field, .select {
+      width: 100%;
+      border-radius: 9px;
+      padding: 7px 10px;
+      border: 1px solid #ddd5cb;
+      background: #fff;
+      color: #1c1512;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    .field:focus { border-color: #bf5827; box-shadow: 0 0 0 3px rgba(191,88,39,.12); }
+
+    .filtersTable {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-top: 8px;
+    }
+    .filtersTable td { vertical-align: top; }
+    .f1 { width: 33%; padding-right: 7px; }
+    .f2 { width: 23%; padding-right: 7px; }
+    .f3 { width: 19%; padding-right: 7px; }
+    .f4 { width: 25%; text-align: right; }
+
+    .checkChip {
+      display: inline-block;
+      padding: 7px 10px;
+      border-radius: 9px;
+      border: 1px solid #ddd5cb;
+      background: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      color: #3a2e26;
+      white-space: nowrap;
+    }
+    .checkChip:hover { background: #faf6f1; }
+
+    /* ── LIST HEAD ───────────────────────────────────── */
+
+    #listHead {
+      position: absolute;
+      left: 0; right: 0; top: 110px;
+      height: 32px;
+      padding: 7px 14px;
+      background: #faf6f1;
+      border-bottom: 1px solid #ece5db;
+      font-size: 11px;
+      color: #b0a098;
+    }
+
+    /* ── STATION LIST ────────────────────────────────── */
+
+    #stationList {
+      position: absolute;
+      left: 0; right: 0; top: 142px; bottom: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: #d8d0c8 #faf6f1;
+    }
+    #stationList::-webkit-scrollbar { width: 5px; }
+    #stationList::-webkit-scrollbar-track { background: #faf6f1; }
+    #stationList::-webkit-scrollbar-thumb { background: #d8d0c8; border-radius: 3px; }
+
+    .row {
+      padding: 9px 14px 9px 16px;
+      border-bottom: 1px solid #f2ede6;
+      background: #fff;
+      cursor: default;
+      border-left: 3px solid transparent;
+      transition: background .1s;
+    }
+    .rowAlt      { background: #fdf9f5; }
+    .row:hover   { background: #faf0e6 !important; }
+    .rowActive   { background: #fff3ec !important; border-left-color: #bf5827 !important; }
+    .rowSelected { background: #f5e8de !important; }
+
+    .rowTable { width: 100%; table-layout: fixed; border-collapse: collapse; }
+    .colStar  { width: 28px; text-align: center; vertical-align: middle; }
+    .colMeta  { width: 68px; text-align: right; vertical-align: top; padding-top: 2px; font-size: 10px; color: #b0a098; }
+
+    .star {
+      font-size: 15px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      color: #d0c6be;
+      transition: color .15s;
+    }
+    .star:hover { color: #e8a428; }
+    .starFav    { color: #e8a428 !important; }
+    .playMark   { color: #bf5827; font-size: 10px; margin-left: 4px; }
+
+    .stationName {
+      font-size: 13px;
+      font-weight: bold;
+      color: #1c1512;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stationSub { margin-top: 2px; font-size: 11px; color: #9a8e84; }
+    .stationUrl {
+      margin-top: 3px;
+      font-size: 10px;
+      color: #c0b4aa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── RIGHT PANEL ─────────────────────────────────── */
+
+    .panelBlock {
+      background: #fff;
+      border: 1px solid #e5ddd4;
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 10px rgba(80, 50, 20, .07);
+    }
+
+    .panelTitle {
+      font-size: 10px;
+      font-weight: bold;
+      color: #c5bbb4;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 12px;
+    }
+
+    .nowTitle {
+      font-family: Georgia, "Book Antiqua", "Palatino Linotype", serif;
+      font-size: 19px;
+      font-weight: bold;
+      color: #1c1512;
+      line-height: 1.25;
+    }
+    .nowMeta { margin-top: 6px; font-size: 12px; color: #9a8e84; }
+    .nowUrl  {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #f0ebe4;
+      font-size: 10px;
+      color: #c0b4aa;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    .hint { font-size: 12px; color: #7a6e65; line-height: 1.75; }
+
+    .kbdKey {
+      display: inline-block;
+      background: #f5f0ea;
+      border: 1px solid #ddd5cb;
+      border-radius: 4px;
+      padding: 0 5px;
+      font-size: 10px;
+      font-family: "Courier New", monospace;
+      color: #5a4e46;
+      vertical-align: middle;
+      margin-right: 2px;
+    }
+
+    /* ── CLEARFIX ────────────────────────────────────── */
+    .cf::after { content: ""; display: block; clear: both; }
+  </style>
+</head>
+<body>
+  <div id="shell">
+
+    <!-- HEADER -->
+    <div id="header" class="cf">
+      <div class="brand">
+        <div class="brandTitle">Radio<em>Antomatee</em></div>
+        <div class="brandSub" id="topInfo">Wybierz stację z listy i uruchom Enterem lub dwuklikiem.</div>
+      </div>
+
+      <div class="toolbar">
+        <div class="statusRow">
+          <span class="dot" id="statusDot"></span><span id="statusText">—</span>
+        </div>
+        <div class="controlsRow">
+          <button class="btn" id="btnPrev" title="Poprzednia (←)">⏮ Prev</button>
+          <button class="btn btnPlay" id="btnPlay" title="Graj / Pauza (Spacja)">▶&nbsp; Graj</button>
+          <button class="btn" id="btnNext" title="Następna (→)">Next ⏭</button>
+          <button class="btn btnStop" id="btnStop" title="Stop">⏹ Stop</button>
+          <span class="volWrap">
+            Vol
+            <input class="volInput" id="volInput" type="number" min="0" max="100" value="65" />
+            <button class="btn miniBtn" id="btnVolDown" title="-5">−</button>
+            <button class="btn miniBtn" id="btnVolUp" title="+5">+</button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main">
+
+      <!-- LEFT: station list -->
+      <div id="leftPanel">
+        <div id="filters">
+          <input class="field" id="search" type="text"
+                 placeholder="Szukaj stacji, gatunku, kraju, URL…  (skrót: S)" />
+          <table class="filtersTable" cellspacing="0" cellpadding="0">
+            <tr>
+              <td class="f1"><select class="select" id="filterCountry"></select></td>
+              <td class="f2"><select class="select" id="filterGenre"></select></td>
+              <td class="f3">
+                <select class="select" id="sortMode">
+                  <option value="name">Sortuj: nazwa</option>
+                  <option value="country">Sortuj: kraj</option>
+                  <option value="bitrate">Sortuj: bitrate</option>
+                </select>
+              </td>
+              <td class="f4">
+                <label class="checkChip" title="Pokaż tylko ulubione (F)">
+                  <input type="checkbox" id="onlyFav" /> ★ Ulubione
+                </label>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div id="listHead">
+          Stacje &nbsp;<span id="countInfo" style="color:#c0b4aa;">0 / 0</span>
+          <span style="float:right; color:#c0b4aa;">1 klik = zaznacz &nbsp;·&nbsp; 2 kliki = uruchom</span>
+        </div>
+
+        <div id="stationList" tabindex="0"></div>
+      </div>
+
+      <!-- RIGHT: info panels -->
+      <div id="rightPanel">
+
+        <div class="panelBlock">
+          <div class="panelTitle">Teraz gra</div>
+          <div class="nowTitle" id="nowName">Nic nie gra</div>
+          <div class="nowMeta" id="nowMeta">—</div>
+          <div class="nowUrl" id="nowUrl">—</div>
+          <button class="btn btnWide" id="btnCopy">⧉&nbsp; Kopiuj URL strumienia</button>
+          <button class="btn btnWide" id="btnBrowser">🌐&nbsp; Otwórz URL w nowej karcie</button>
+        </div>
+
+        <div class="panelBlock">
+          <div class="panelTitle">Narzędzia</div>
+          <button class="btn btnWide" id="btnClear">✕&nbsp; Wyczyść filtry</button>
+          <button class="btn btnWide" id="btnResetStorage" style="color:#8a3820;border-color:#e8ccc4;background:#fff0ec;">🗑&nbsp; Wyczyść ustawienia (localStorage)</button>
+          <div class="hint" style="margin-top:12px; color:#b0a098; font-size:11px; line-height:1.6;">
+            Stacji: <b id="stationTotal" style="color:#7a6e65;">0</b><br/>
+            Ustawienia (ulubione, głośność) zapisywane są w <code style="font-size:10px;">localStorage</code> przeglądarki.
+          </div>
+        </div>
+
+        <div class="panelBlock">
+          <div class="panelTitle">Skróty klawiszowe</div>
+          <div class="hint">
+            <span class="kbdKey">↑ ↓</span> wybór stacji<br/>
+            <span class="kbdKey">Enter</span> uruchom zaznaczoną<br/>
+            <span class="kbdKey">Spacja</span> graj / pauza<br/>
+            <span class="kbdKey">← →</span> poprzednia / następna<br/>
+            <span class="kbdKey">F</span> ulubione (toggle)<br/>
+            <span class="kbdKey">S</span> fokus wyszukiwarki<br/>
+            <span class="kbdKey">Esc</span> wyczyść filtry / opuść pole
+          </div>
+        </div>
+
+        <div class="panelBlock">
+          <div class="panelTitle">Informacja</div>
+          <div class="hint" style="color:#b0a098;">
+            Wszystkie stacje używają <b style="color:#7a6e65;">HTTPS</b>.
+            Polskie Radio działa przez protokół <b style="color:#7a6e65;">HLS</b>
+            (obsługiwany przez bibliotekę hls.js w Chrome/Firefox/Edge; natywnie w Safari).<br/><br/>
+            Chcesz dodać własną stację? Edytuj tablicę <code style="font-size:10px;">RAW_STREAMS</code>
+            w pliku <code style="font-size:10px;">index.html</code>.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var RAW_STREAMS = [
+      /* ── Eurozet ──────────────────────────────────── */
+      "https://an.cdn.eurozet.pl/ant-web.mp3|Antyradio|Rock|PL|128|0",
+      "https://n-6-12.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx|Radio Zet|Pop|PL|128|0",
+      "https://zt05.cdn.eurozet.pl/ZETDAN.mp3|Radio Zet Dance|Dance|PL|128|0",
+
+      /* ── ESKA / smcdn ─────────────────────────────── */
+      "https://ext03.ic.smcdn.pl/t064-1.mp3|ESKA Warszawa|Pop|PL|128|0",
+      "https://ext03.ic.smcdn.pl/t041-1.aac|ESKA Rock|Rock|PL|128|0",
+
+      /* ── RMF (cyfronet HTTPS) ─────────────────────── */
+      "https://rs9-krk2-cyfronet.rmfstream.pl/RMFFM48|RMF FM|Pop|PL|128|0",
+      "https://rs7-krk2-cyfronet.rmfstream.pl/RMFMAXXX48|RMF MAXXX|Electronic|PL|128|0",
+
+      /* ── Polskie Radio (HLS — działa przez hls.js) ── */
+      "https://stream11.polskieradio.pl/pr1/pr1.sdp/playlist.m3u8|Polskie Radio Jedynka|Easy Listening|PL|0|0",
+      "https://stream12.polskieradio.pl/pr2/pr2.sdp/playlist.m3u8|Polskie Radio Dwójka|Classical|PL|0|0",
+      "https://stream13.polskieradio.pl/pr3/pr3.sdp/playlist.m3u8|Polskie Radio Trójka|Pop|PL|0|0",
+      "https://stream14.polskieradio.pl/pr4/pr4.sdp/playlist.m3u8|Polskie Radio Czwórka|Alternative|PL|0|0",
+      "https://stream15.polskieradio.pl/pr24/pr24.sdp/playlist.m3u8|Polskie Radio 24|News|PL|0|0",
+      "https://stream85.polskieradio.pl/live/radio_dzieciom.sdp/playlist.m3u8|Polskie Radio Dzieciom|Children|PL|0|0",
+      "https://stream85.polskieradio.pl/live/rytm.sdp/playlist.m3u8|Polskie Radio Chopin|Classical|PL|0|0",
+
+      /* ── Revma / inne ─────────────────────────────── */
+      "https://n28a-eu.rcs.revma.com/1nnezw8qz7zuv|MUZO.FM|Rock Pop|PL|128|0",
+      "https://n17a-eu.rcs.revma.com/an1ugyygzk8uv|Radio 357|Pop|PL|128|0",
+      "https://n37a-eu.rcs.revma.com/ypqt40u0x1zuv|Radio Nowy Świat|Alternative|PL|128|0",
+
+      /* ── Open.fm ──────────────────────────────────── */
+      "https://stream.open.fm/31|Open.FM Dance|Dance|PL|128|0",
+      "https://stream.open.fm/114|Open.FM Club|Club|PL|128|0",
+
+      /* ── Radiostream.pl ───────────────────────────── */
+      "https://radiostream.pl/tuba38-1.mp3|Radio Pogoda|Pop|PL|128|0",
+      "https://radiostream.pl/tuba8-1.mp3|Rock Radio|Rock|PL|128|0",
+      "https://radiostream.pl/tuba10-1.mp3|Tok FM|Talk-News|PL|128|0",
+
+      /* ── Inne PL ──────────────────────────────────── */
+      "https://streaming.g-news.pl:8030/rk1|Radio Kielce|Local|PL|128|0",
+      "https://stream.radiokampus.fm/kampus|Radio Kampus|Alternative|PL|128|0",
+
+      /* ── RadioParty ───────────────────────────────── */
+      "https://s1.radioparty.pl:8005/energy2000|RadioParty Energy 2000|Party|PL|128|0",
+      "https://s2.radioparty.pl:8045/house|RadioParty House|House|PL|128|0",
+      "https://s2.radioparty.pl:8020/trance|RadioParty Trance|Trance|PL|128|0",
+      "https://s2.radioparty.pl:8025/vocaltrance|RadioParty Vocal Trance|Trance|PL|128|0",
+
+      /* ── Sim Radio / EN ───────────────────────────── */
+      "https://radio.truckers.fm/|TruckersFM|Sim Radio|EN|320|0"
+    ];
+
+    /* ── STATE ───────────────────────────────────────── */
+
+    var state = {
+      stations: [], view: [], favorites: {},
+      selectedIndex: 0, activeId: "", volume: 65,
+      filters: { q: "", country: "", genre: "", onlyFav: false, sort: "name" },
+      connectTimer: null, connectToken: 0
+    };
+
+    /* ── AUDIO ───────────────────────────────────────── */
+
+    var audioEl = null;
+    var audioState = 1;
+    var _stopping = false;
+    var hlsInstance = null;
+
+    function destroyHls() {
+      if (hlsInstance) {
+        try { hlsInstance.destroy(); } catch(e) {}
+        hlsInstance = null;
+      }
+    }
+
+    function getPlayer() {
+      if (!audioEl) {
+        audioEl = new Audio();
+        audioEl.preload = 'none';
+        audioEl.addEventListener('playing', function () {
+          if (_stopping) return;
+          audioState = 3; onPlayStateChange(3);
+        });
+        audioEl.addEventListener('pause', function () {
+          if (_stopping) return;
+          audioState = 2; onPlayStateChange(2);
+        });
+        audioEl.addEventListener('waiting', function () {
+          if (_stopping) return;
+          audioState = 6; onPlayStateChange(6);
+        });
+        audioEl.addEventListener('stalled', function () {
+          if (_stopping) return;
+          audioState = 11; onPlayStateChange(11);
+        });
+        audioEl.addEventListener('error', function () {
+          if (_stopping) return;
+          onPlayerError();
+        });
+        audioEl.addEventListener('ended', function () {
+          if (_stopping) return;
+          audioState = 1; onPlayStateChange(1);
+        });
+      }
+      return audioEl;
+    }
+
+    /* ── HELPERS ─────────────────────────────────────── */
+
+    function $(id) { return document.getElementById(id); }
+
+    function bind(el, evt, fn) {
+      if (!el) return;
+      el.addEventListener(evt, fn, false);
+    }
+
+    function stopEvt(e) {
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+      return false;
+    }
+
+    function clamp(n, min, max) {
+      n = parseInt(n, 10);
+      if (isNaN(n)) n = min;
+      return n < min ? min : n > max ? max : n;
+    }
+
+    function trim(s) { return ("" + (s == null ? "" : s)).replace(/^\s+|\s+$/g, ""); }
+    function lower(s) { return trim(s).toLowerCase(); }
+
+    function safeText(s) {
+      return ("" + (s == null ? "" : s))
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function uniqSort(arr) {
+      var map = {}, out = [], i, v;
+      for (i = 0; i < arr.length; i++) {
+        v = trim(arr[i]);
+        if (!v || map[v]) continue;
+        map[v] = 1; out.push(v);
+      }
+      return out.sort(function (a, b) {
+        a = lower(a); b = lower(b);
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
+    }
+
+    function hash32(str) {
+      var i, h = 2166136261;
+      for (i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = h + (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+      }
+      return ("00000000" + (h >>> 0).toString(16)).slice(-8);
+    }
+
+    function makeId(url, name) { return hash32(url + "|" + name); }
+
+    /* ── PARSE STATIONS ──────────────────────────────── */
+
+    function parseStations(raw) {
+      var out = [], seen = {}, i, parts, url, name, genre, country, bitrate, key;
+      for (i = 0; i < raw.length; i++) {
+        parts = ("" + raw[i]).split("|");
+        if (parts.length < 5) continue;
+        url = trim(parts[0]); name = trim(parts[1]);
+        genre = trim(parts[2]); country = trim(parts[3]);
+        bitrate = parseInt(parts[4], 10) || 0;
+        if (!url || !name) continue;
+        key = lower(url) + "|" + lower(name);
+        if (seen[key]) continue;
+        seen[key] = 1;
+        out.push({
+          id: makeId(url, name), url: url, name: name,
+          genre: genre || "Inne", country: country || "?",
+          bitrate: bitrate, https: /^https:/i.test(url)
+        });
+      }
+      return out.sort(function (a, b) {
+        var an = lower(a.name), bn = lower(b.name);
+        return an < bn ? -1 : an > bn ? 1 : 0;
+      });
+    }
+
+    /* ── CONFIG (localStorage) ───────────────────────── */
+
+    var STORAGE_KEY = 'radioantomatee-config';
+
+    function loadConfig() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        var cfg = JSON.parse(raw);
+        if (cfg.volume != null) state.volume = clamp(cfg.volume, 0, 100);
+        if (cfg.activeId) state.activeId = "" + cfg.activeId;
+        if (cfg.favorites) state.favorites = cfg.favorites;
+        if (cfg.sort) state.filters.sort = "" + cfg.sort;
+      } catch (e) {}
+    }
+
+    var _saveTimer = null;
+    function debouncedSave() {
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(saveConfig, 600);
+    }
+
+    function saveConfig() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          version: 1,
+          volume: state.volume,
+          activeId: state.activeId,
+          favorites: state.favorites,
+          sort: state.filters.sort
+        }));
+      } catch (e) {}
+    }
+
+    /* ── STATUS & PLAY BUTTON ────────────────────────── */
+
+    function setStatus(kind, text) {
+      $("statusDot").className = "dot" + (kind ? " " + kind : "");
+      $("statusText").textContent = text || "—";
+    }
+
+    function updatePlayButton(ps) {
+      var btn = $("btnPlay");
+      if (ps === 3 || ps === 6 || ps === 9 || ps === 11) {
+        btn.textContent = "⏸  Pauza";
+        btn.className = "btn btnPlay";
+      } else if (ps === 2) {
+        btn.textContent = "▶  Start";
+        btn.className = "btn btnResume";
+      } else {
+        btn.textContent = "▶  Graj";
+        btn.className = "btn btnPlay";
+      }
+    }
+
+    /* ── NOW PLAYING ─────────────────────────────────── */
+
+    function setNowPlaying(st) {
+      if (!st) {
+        $("topInfo").textContent = "Wybierz stację z listy — Enter, dwuklik lub przycisk Graj.";
+        $("nowName").textContent = "Nic nie gra";
+        $("nowMeta").textContent = "—";
+        $("nowUrl").textContent = "—";
+        return;
+      }
+      $("topInfo").textContent = st.name + "  ·  " + st.genre + "  ·  " + st.country;
+      $("nowName").textContent = st.name;
+      $("nowMeta").textContent = st.genre + "  ·  " + st.country + (st.bitrate ? "  ·  " + st.bitrate + " kbps" : "");
+      $("nowUrl").textContent = st.url;
+    }
+
+    /* ── LOOKUP HELPERS ──────────────────────────────── */
+
+    function getStationById(id) {
+      for (var i = 0; i < state.stations.length; i++)
+        if (state.stations[i].id === id) return state.stations[i];
+      return null;
+    }
+    function getSelectedStation() { return state.view[state.selectedIndex] || null; }
+    function getActiveStation() { return state.activeId ? getStationById(state.activeId) : null; }
+
+    /* ── FILTER & SORT ───────────────────────────────── */
+
+    function fillSelect(id, firstLabel, values, selected) {
+      var el = $(id), i;
+      el.length = 0;
+      el.options[0] = new Option(firstLabel, "");
+      for (i = 0; i < values.length; i++) el.options[el.length] = new Option(values[i], values[i]);
+      el.value = selected || "";
+    }
+
+    function renderFilterOptions() {
+      var countries = [], genres = [], i;
+      for (i = 0; i < state.stations.length; i++) {
+        countries.push(state.stations[i].country);
+        genres.push(state.stations[i].genre);
+      }
+      fillSelect("filterCountry", "Kraj: wszystkie", uniqSort(countries), state.filters.country);
+      fillSelect("filterGenre", "Gatunek: wszystkie", uniqSort(genres), state.filters.genre);
+      $("sortMode").value = state.filters.sort;
+    }
+
+    function sortView(list) {
+      var mode = state.filters.sort;
+      list.sort(function (a, b) {
+        if (mode === "bitrate" && a.bitrate !== b.bitrate) return b.bitrate - a.bitrate;
+        if (mode === "country") {
+          var ac = lower(a.country), bc = lower(b.country);
+          if (ac < bc) return -1; if (ac > bc) return 1;
+        }
+        var an = lower(a.name), bn = lower(b.name);
+        return an < bn ? -1 : an > bn ? 1 : 0;
+      });
+    }
+
+    function applyFilters() {
+      var q = lower(state.filters.q), country = state.filters.country;
+      var genre = state.filters.genre, onlyFav = state.filters.onlyFav;
+      var out = [], i, st;
+      for (i = 0; i < state.stations.length; i++) {
+        st = state.stations[i];
+        if (onlyFav && !state.favorites[st.id]) continue;
+        if (country && st.country !== country) continue;
+        if (genre && st.genre !== genre) continue;
+        if (q) {
+          var hay = lower(st.name + " " + st.genre + " " + st.country + " " + st.url);
+          if (hay.indexOf(q) < 0) continue;
+        }
+        out.push(st);
+      }
+      sortView(out);
+      state.view = out;
+      state.selectedIndex = clamp(state.selectedIndex, 0, Math.max(0, out.length - 1));
+    }
+
+    /* ── ROW RENDERING ───────────────────────────────── */
+
+    var rowEls = [];
+
+    function rowClass(idx, st) {
+      var c = "row";
+      if (idx % 2 === 1) c += " rowAlt";
+      if (idx === state.selectedIndex) c += " rowSelected";
+      if (st.id === state.activeId) c += " rowActive";
+      return c;
+    }
+
+    function updateRowClasses() {
+      for (var i = 0; i < rowEls.length; i++)
+        if (rowEls[i]) rowEls[i].className = rowClass(i, state.view[i]);
+    }
+
+    function renderList() {
+      applyFilters();
+      var html = [], i, st, fav, list = $("stationList"), prev = 0;
+      rowEls = [];
+      try { prev = list.scrollTop; } catch (e) {}
+      $("countInfo").textContent = state.view.length + " / " + state.stations.length;
+      if (!state.view.length) {
+        list.innerHTML = "<div style='padding:18px;color:#b0a098;font-size:13px;'>Brak wyników. Zmień filtry lub wpisz inną frazę.</div>";
+        return;
+      }
+      for (i = 0; i < state.view.length; i++) {
+        st = state.view[i];
+        fav = !!state.favorites[st.id];
+        var httpsTag = '';
+        html.push(
+          "<div class='" + rowClass(i, st) + "' data-row='1' data-index='" + i + "'>" +
+            "<table class='rowTable' cellspacing='0' cellpadding='0'><tr>" +
+              "<td class='colStar'><span class='star" + (fav ? " starFav" : "") + "' data-action='fav'>&#" + (fav ? "9733" : "9734") + ";</span></td>" +
+              "<td><div class='stationName'>" + safeText(st.name) + httpsTag +
+                (st.id === state.activeId ? "<span class='playMark'>&#9654;</span>" : "") +
+              "</div>" +
+              "<div class='stationSub'>" + safeText(st.genre + " · " + st.country) + "</div>" +
+              "<div class='stationUrl'>" + safeText(st.url) + "</div></td>" +
+              "<td class='colMeta'>" + (st.bitrate ? st.bitrate + " kbps" : "") + "</td>" +
+            "</tr></table></div>"
+        );
+      }
+      list.innerHTML = html.join("");
+      list.scrollTop = prev;
+      var nodes = list.querySelectorAll("[data-index]"), idx;
+      for (i = 0; i < nodes.length; i++) {
+        idx = parseInt(nodes[i].getAttribute("data-index"), 10);
+        if (!isNaN(idx)) rowEls[idx] = nodes[i];
+      }
+    }
+
+    /* ── SELECTION ───────────────────────────────────── */
+
+    function selectIndex(idx, reveal) {
+      if (!state.view.length) { state.selectedIndex = 0; return; }
+      state.selectedIndex = clamp(idx, 0, state.view.length - 1);
+      updateRowClasses();
+      if (reveal) {
+        var row = rowEls[state.selectedIndex];
+        if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    /* ── VOLUME ──────────────────────────────────────── */
+
+    function setVolume(v) {
+      v = clamp(v, 0, 100);
+      state.volume = v;
+      $("volInput").value = v;
+      try { getPlayer().volume = v / 100; } catch (e) {}
+      debouncedSave();
+    }
+
+    /* ── CONNECT TIMER ───────────────────────────────── */
+
+    function stopConnectTimer() {
+      clearTimeout(state.connectTimer);
+      state.connectTimer = null;
+    }
+
+    function armConnectTimer() {
+      stopConnectTimer();
+      state.connectToken++;
+      var tok = state.connectToken;
+      state.connectTimer = setTimeout(function () {
+        if (tok !== state.connectToken) return;
+        if (audioState !== 3) {
+          setStatus("bad", "Nie udało się połączyć ze stacją");
+          updatePlayButton(1);
+        }
+      }, 15000);
+    }
+
+    /* ── PLAYBACK ────────────────────────────────────── */
+
+    function playUrl(url) {
+      try {
+        var a = getPlayer();
+        _stopping = false;
+        destroyHls();
+
+        var isHls = /\.m3u8/i.test(url);
+
+        if (isHls) {
+          if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            hlsInstance = new Hls({ enableWorker: false });
+            hlsInstance.loadSource(url);
+            hlsInstance.attachMedia(a);
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, function () {
+              if (_stopping) return;
+              var p = a.play();
+              if (p && p.catch) p.catch(function () { if (!_stopping) onPlayerError(); });
+            });
+            hlsInstance.on(Hls.Events.ERROR, function (evt, data) {
+              if (data.fatal && !_stopping) onPlayerError();
+            });
+            return true;
+          } else if (a.canPlayType('application/vnd.apple.mpegurl')) {
+            // Safari — native HLS
+            a.src = url;
+            var p2 = a.play();
+            if (p2 && p2.catch) p2.catch(function () { if (!_stopping) onPlayerError(); });
+            return true;
+          } else {
+            setStatus("bad", "Ten stream HLS nie jest obsługiwany przez tę przeglądarkę");
+            return false;
+          }
+        }
+
+        a.src = url;
+        var p3 = a.play();
+        if (p3 && p3.catch) p3.catch(function () { if (!_stopping) onPlayerError(); });
+        return true;
+      } catch (e) { return false; }
+    }
+
+    function playStation(st) {
+      if (!st) return;
+      state.activeId = st.id;
+      saveConfig();
+      setNowPlaying(st);
+      setStatus("warn", "Łączenie…");
+      updatePlayButton(6);
+      setVolume(state.volume);
+      if (!playUrl(st.url)) { setStatus("bad", "Nie udało się uruchomić stacji"); return; }
+      armConnectTimer();
+      updateRowClasses();
+    }
+
+    function playSelected() { var st = getSelectedStation(); if (st) playStation(st); }
+
+    function togglePlayPause() {
+      if (!state.activeId) { playSelected(); return; }
+      var a = getPlayer();
+      if (audioState === 3 || audioState === 6 || audioState === 9 || audioState === 11) {
+        _stopping = false;
+        a.pause();
+        return;
+      }
+      var st = getActiveStation();
+      if (!st) { playSelected(); return; }
+      _stopping = false;
+      if (a.src !== st.url) a.src = st.url;
+      var p = a.play();
+      if (p && p.catch) p.catch(function () { onPlayerError(); });
+    }
+
+    function stopPlayback() {
+      stopConnectTimer();
+      _stopping = true;
+      destroyHls();
+      try {
+        var a = getPlayer();
+        a.pause();
+        a.removeAttribute('src');
+        a.load();
+      } catch (e) {}
+      audioState = 1;
+      _stopping = false;
+      setStatus("", "Zatrzymane");
+      updatePlayButton(1);
+    }
+
+    function nextPrev(dir) {
+      if (!state.view.length) return;
+      var idx = state.selectedIndex + dir;
+      if (idx < 0) idx = state.view.length - 1;
+      if (idx >= state.view.length) idx = 0;
+      state.selectedIndex = idx;
+      updateRowClasses();
+      var row = rowEls[state.selectedIndex];
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+      playSelected();
+    }
+
+    function toggleFavorite(id) {
+      if (!id) return;
+      if (state.favorites[id]) delete state.favorites[id];
+      else state.favorites[id] = 1;
+      saveConfig();
+      renderList();
+    }
+
+    function clearFilters() {
+      state.filters.q = state.filters.country = state.filters.genre = "";
+      state.filters.onlyFav = false;
+      $("search").value = "";
+      $("filterCountry").value = "";
+      $("filterGenre").value = "";
+      $("onlyFav").checked = false;
+      state.selectedIndex = 0;
+      renderList();
+    }
+
+    /* ── PLAYER EVENTS ───────────────────────────────── */
+
+    function onPlayStateChange(newState) {
+      stopConnectTimer();
+      if (newState === 3)       setStatus("ok",   "Połączono · Odtwarzanie");
+      else if (newState === 2)  setStatus("warn",  "Pauza");
+      else if (newState === 6 || newState === 11) { setStatus("warn", "Buforowanie / łączenie…"); armConnectTimer(); }
+      else if (newState === 1)  setStatus("",      "Zatrzymane");
+      updatePlayButton(newState);
+      updateRowClasses();
+    }
+
+    function onPlayerError() {
+      stopConnectTimer();
+      setStatus("bad", "Błąd · Sprawdź czy stream HTTP nie jest blokowany");
+      updatePlayButton(1);
+    }
+
+    /* ── CLIPBOARD & OPEN URL ────────────────────────── */
+
+    function copyActiveUrl() {
+      var st = getActiveStation() || getSelectedStation();
+      if (!st) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(st.url)
+          .then(function () { setStatus("ok", "Skopiowano URL"); })
+          .catch(function () { promptCopy(st.url); });
+      } else { promptCopy(st.url); }
+    }
+
+    function promptCopy(url) { window.prompt("Skopiuj URL:", url); }
+
+    function openActiveUrl() {
+      var st = getActiveStation() || getSelectedStation();
+      if (st) window.open(st.url, '_blank', 'noopener');
+    }
+
+    /* ── ROW CLICK RESOLVE ───────────────────────────── */
+
+    function resolveRow(target) {
+      var list = $("stationList"), el = target;
+      while (el && el !== list) {
+        if (el.getAttribute && el.getAttribute("data-row") === "1") return el;
+        el = el.parentNode;
+      }
+      return null;
+    }
+
+    /* ── UI BINDINGS ─────────────────────────────────── */
+
+    function bindUi() {
+      var _searchTimer = null;
+      bind($("search"), "input", function () {
+        clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(function () {
+          state.filters.q = $("search").value || "";
+          state.selectedIndex = 0;
+          renderList();
+        }, 180);
+      });
+
+      bind($("filterCountry"), "change", function () {
+        state.filters.country = $("filterCountry").value || "";
+        state.selectedIndex = 0; renderList();
+      });
+      bind($("filterGenre"), "change", function () {
+        state.filters.genre = $("filterGenre").value || "";
+        state.selectedIndex = 0; renderList();
+      });
+      bind($("sortMode"), "change", function () {
+        state.filters.sort = $("sortMode").value || "name";
+        saveConfig(); renderList();
+      });
+      bind($("onlyFav"), "click", function () {
+        state.filters.onlyFav = $("onlyFav").checked;
+        state.selectedIndex = 0; renderList();
+      });
+
+      bind($("btnClear"), "click", clearFilters);
+      bind($("btnPlay"), "click", togglePlayPause);
+      bind($("btnStop"), "click", stopPlayback);
+      bind($("btnPrev"), "click", function () { nextPrev(-1); });
+      bind($("btnNext"), "click", function () { nextPrev(1); });
+      bind($("btnVolDown"), "click", function () { setVolume(state.volume - 5); });
+      bind($("btnVolUp"), "click", function () { setVolume(state.volume + 5); });
+      bind($("volInput"), "change", function () { setVolume($("volInput").value); });
+      bind($("btnCopy"), "click", copyActiveUrl);
+      bind($("btnBrowser"), "click", openActiveUrl);
+      bind($("btnResetStorage"), "click", function () {
+        if (!window.confirm("Wyczyścić wszystkie ustawienia (ulubione, głośność)?")) return;
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        state.favorites = {};
+        state.volume = 65;
+        setVolume(65);
+        renderList();
+        setStatus("ok", "Ustawienia wyczyszczone");
+      });
+
+      bind($("stationList"), "click", function (e) {
+        var t = e.target, row = resolveRow(t), idx;
+        if (!row) return;
+        idx = parseInt(row.getAttribute("data-index"), 10);
+        if (isNaN(idx) || !state.view[idx]) return;
+        if (t && t.getAttribute && t.getAttribute("data-action") === "fav") {
+          toggleFavorite(state.view[idx].id);
+          return stopEvt(e);
+        }
+        state.selectedIndex = idx;
+        updateRowClasses();
+      });
+
+      bind($("stationList"), "dblclick", function (e) {
+        var t = e.target, row = resolveRow(t), idx;
+        if (!row) return;
+        idx = parseInt(row.getAttribute("data-index"), 10);
+        if (isNaN(idx) || !state.view[idx]) return;
+        if (t && t.getAttribute && t.getAttribute("data-action") === "fav") return stopEvt(e);
+        state.selectedIndex = idx;
+        updateRowClasses();
+        playSelected();
+        return stopEvt(e);
+      });
+
+      bind(document, "keydown", function (e) {
+        var key = e.keyCode || 0;
+        var src = e.target;
+        var tag = src && src.tagName ? src.tagName.toLowerCase() : "";
+        var typing = (tag === "input" || tag === "textarea" || tag === "select");
+        var st;
+        if (typing) {
+          if (key === 27) { src.blur(); return stopEvt(e); }
+          return;
+        }
+        if (key === 32) { togglePlayPause(); return stopEvt(e); }
+        if (key === 13) { playSelected(); return stopEvt(e); }
+        if (key === 83) { $("search").focus(); return stopEvt(e); }
+        if (key === 38) { selectIndex(state.selectedIndex - 1, true); return stopEvt(e); }
+        if (key === 40) { selectIndex(state.selectedIndex + 1, true); return stopEvt(e); }
+        if (key === 37) { nextPrev(-1); return stopEvt(e); }
+        if (key === 39) { nextPrev(1); return stopEvt(e); }
+        if (key === 70) { st = getSelectedStation(); if (st) toggleFavorite(st.id); }
+        if (key === 27) { clearFilters(); return stopEvt(e); }
+      });
+    }
+
+    /* ── INIT ────────────────────────────────────────── */
+
+    window.addEventListener('DOMContentLoaded', function () {
+      state.stations = parseStations(RAW_STREAMS);
+      loadConfig();
+      renderFilterOptions();
+      $("onlyFav").checked = !!state.filters.onlyFav;
+      $("volInput").value = state.volume;
+      getPlayer(); // init audio element
+      setVolume(state.volume);
+      updatePlayButton(1);
+      bindUi();
+
+      if (state.activeId) {
+        var st = getStationById(state.activeId);
+        setNowPlaying(st || null);
+        if (st) {
+          renderList();
+          for (var i = 0; i < state.view.length; i++) {
+            if (state.view[i] && state.view[i].id === state.activeId) {
+              state.selectedIndex = i; break;
+            }
+          }
+        }
+      } else {
+        setNowPlaying(null);
+      }
+
+      renderList();
+      setStatus("", "Gotowe");
+      $("stationTotal").textContent = state.stations.length;
+    });
+  </script>
+</body>
+</html>
