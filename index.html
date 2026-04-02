@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#f5f0ea" />
+  <title>Radio Antomatee</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      height: 100%;
+      font-family: "Trebuchet MS", "Gill Sans MT", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif;
+      background: #f5f0ea;
+      color: #1c1512;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ══════════════════════════════════════
+       DESKTOP (≥ 700px)
+    ══════════════════════════════════════ */
+
+    #shell {
+      position: absolute;
+      inset: 0;
+      padding: 14px;
+    }
+
+    #header {
+      position: absolute;
+      left: 14px; right: 14px; top: 14px;
+      height: 80px;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid #e5ddd4;
+      box-shadow: 0 2px 16px rgba(80,50,20,.09);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brandTitle {
+      font-family: Georgia, "Book Antiqua", serif;
+      font-size: 22px; font-weight: bold; color: #1c1512; letter-spacing: -.4px; line-height: 1;
+    }
+    .brandTitle em { color: #bf5827; font-style: normal; }
+    .brandSub { font-size: 11px; color: #9a8e84; margin-top: 4px; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .toolbar { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+    .statusRow { font-size: 11px; color: #9a8e84; white-space: nowrap; }
+    .controlsRow { display: flex; align-items: center; gap: 4px; }
+
+    #main {
+      position: absolute;
+      left: 14px; right: 14px;
+      top: 108px; bottom: 14px;
+      display: flex;
+      gap: 16px;
+    }
+
+    #leftPanel {
+      flex: 1; min-width: 0;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid #e5ddd4;
+      box-shadow: 0 2px 16px rgba(80,50,20,.09);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #rightPanel {
+      width: 338px; flex-shrink: 0;
+      overflow-y: auto; overflow-x: hidden;
+      scrollbar-width: thin; scrollbar-color: #d8d0c8 transparent;
+    }
+    #rightPanel::-webkit-scrollbar { width: 5px; }
+    #rightPanel::-webkit-scrollbar-thumb { background: #d8d0c8; border-radius: 3px; }
+
+    /* Volume slider */
+    .volWrap {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 10px;
+      border: 1px solid #ddd5cb; background: #f8f3ee;
+      font-size: 12px; color: #9a8e84;
+    }
+    .volSlider {
+      -webkit-appearance: none; appearance: none;
+      width: 80px; height: 4px; border-radius: 2px;
+      background: #ddd5cb; outline: none; cursor: pointer;
+      accent-color: #bf5827;
+    }
+    .volSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #bf5827; cursor: pointer;
+    }
+    .volSlider::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #bf5827; border: none; cursor: pointer;
+    }
+    .volLabel { font-size: 11px; min-width: 28px; text-align: right; }
+
+    /* Filters */
+    #filters {
+      flex-shrink: 0;
+      padding: 12px 14px;
+      background: #faf6f1;
+      border-bottom: 1px solid #ece5db;
+    }
+    .field, .select {
+      width: 100%; border-radius: 9px; padding: 7px 10px;
+      border: 1px solid #ddd5cb; background: #fff; color: #1c1512;
+      font-size: 12px; font-family: inherit; outline: none;
+    }
+    .field:focus { border-color: #bf5827; box-shadow: 0 0 0 3px rgba(191,88,39,.12); }
+    .filterRow { display: flex; gap: 6px; margin-top: 8px; }
+    .filterRow .select { flex: 1; min-width: 0; }
+    .checkChip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 7px 10px; border-radius: 9px;
+      border: 1px solid #ddd5cb; background: #fff;
+      font-size: 12px; font-family: inherit;
+      cursor: pointer; user-select: none; -webkit-user-select: none;
+      color: #3a2e26; white-space: nowrap; flex-shrink: 0;
+    }
+
+    #listHead {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      background: #faf6f1;
+      border-bottom: 1px solid #ece5db;
+      font-size: 11px; color: #b0a098;
+      display: flex; justify-content: space-between;
+    }
+
+    #stationList {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      scrollbar-width: thin; scrollbar-color: #d8d0c8 #faf6f1;
+    }
+    #stationList::-webkit-scrollbar { width: 5px; }
+    #stationList::-webkit-scrollbar-track { background: #faf6f1; }
+    #stationList::-webkit-scrollbar-thumb { background: #d8d0c8; border-radius: 3px; }
+
+    .row {
+      padding: 9px 14px 9px 16px;
+      border-bottom: 1px solid #f2ede6;
+      background: #fff;
+      cursor: default;
+      border-left: 3px solid transparent;
+      display: flex; align-items: center; gap: 8px;
+      transition: background .1s;
+    }
+    .row:hover   { background: #faf0e6; }
+    .rowAlt      { background: #fdf9f5; }
+    .rowAlt:hover { background: #faf0e6; }
+    .rowSelected { background: #f5e8de !important; }
+    .rowActive   { background: #fff3ec !important; border-left-color: #bf5827 !important; }
+
+    .rowStar {
+      font-size: 16px; cursor: pointer;
+      user-select: none; -webkit-user-select: none;
+      color: #d0c6be; flex-shrink: 0; transition: color .15s; padding: 2px;
+    }
+    .rowStar:hover { color: #e8a428; }
+    .starFav { color: #e8a428 !important; }
+
+    .rowInfo { flex: 1; min-width: 0; }
+    .stationName {
+      font-size: 13px; font-weight: bold; color: #1c1512;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .playMark { color: #bf5827; font-size: 10px; margin-left: 4px; }
+    .stationSub { margin-top: 2px; font-size: 11px; color: #9a8e84; }
+    .stationUrl { margin-top: 2px; font-size: 10px; color: #c0b4aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rowKbps { font-size: 10px; color: #b0a098; flex-shrink: 0; }
+
+    /* Right panel */
+    .panelBlock {
+      background: #fff; border: 1px solid #e5ddd4;
+      border-radius: 18px; padding: 16px 18px;
+      margin-bottom: 10px; box-shadow: 0 2px 10px rgba(80,50,20,.07);
+    }
+    .panelTitle {
+      font-size: 10px; font-weight: bold; color: #c5bbb4;
+      text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px;
+    }
+    .nowTitle {
+      font-family: Georgia, "Book Antiqua", serif;
+      font-size: 19px; font-weight: bold; color: #1c1512; line-height: 1.25;
+    }
+    .nowMeta { margin-top: 6px; font-size: 12px; color: #9a8e84; }
+    .nowUrl { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0ebe4; font-size: 10px; color: #c0b4aa; word-break: break-all; line-height: 1.5; }
+    .hint { font-size: 12px; color: #7a6e65; line-height: 1.75; }
+    .kbdKey {
+      display: inline-block; background: #f5f0ea; border: 1px solid #ddd5cb;
+      border-radius: 4px; padding: 0 5px; font-size: 10px;
+      font-family: "Courier New", monospace; color: #5a4e46;
+      vertical-align: middle; margin-right: 2px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; font-family: inherit; font-size: 12px;
+      border-radius: 10px; padding: 7px 12px;
+      border: 1px solid #ddd5cb; background: #f8f3ee; color: #3a2e26;
+      transition: background .13s; line-height: 1.2;
+      user-select: none; -webkit-user-select: none; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn:hover { background: #eee5dc; border-color: #c9bfb4; }
+    .btn:active { opacity: .85; }
+    .btnPlay { background: #bf5827; border-color: #bf5827; color: #fff; font-weight: bold; padding: 7px 18px; }
+    .btnPlay:hover { background: #a34820; }
+    .btnResume { background: #2e9e58; border-color: #2e9e58; color: #fff; font-weight: bold; padding: 7px 18px; }
+    .btnResume:hover { background: #24834a; }
+    .btnStop { background: #fff0ec; border-color: #e8ccc4; color: #8a3820; }
+    .btnStop:hover { background: #fde0d8; }
+    .btnWide { display: flex; width: 100%; margin: 6px 0 0 0; padding: 9px 13px; }
+
+    .dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; vertical-align: middle; margin-right: 5px;
+      background: #c5bbb5; transition: background .3s;
+    }
+    .ok { background: #5cb87a; }
+    .warn { background: #e0a030; }
+    .bad { background: #d85040; }
+
+    /* ══════════════════════════════════════
+       MOBILE (< 700px)
+    ══════════════════════════════════════ */
+
+    #mobilePlayer {
+      display: none;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: #fff;
+      border-top: 1px solid #e5ddd4;
+      box-shadow: 0 -4px 20px rgba(80,50,20,.13);
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .mpInner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+    }
+    .mpStatusDot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #c5bbb5; flex-shrink: 0; transition: background .3s;
+    }
+    .mpInfo { flex: 1; min-width: 0; }
+    .mpName { font-size: 13px; font-weight: bold; color: #1c1512; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mpMeta { font-size: 11px; color: #9a8e84; margin-top: 1px; }
+    .mpControls { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .mpBtn {
+      width: 38px; height: 38px; border-radius: 50%;
+      border: 1px solid #ddd5cb; background: #f8f3ee;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px; flex-shrink: 0;
+    }
+    .mpBtnPlay {
+      width: 46px; height: 46px; font-size: 20px;
+      background: #bf5827; border: none; color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .mpBtnResume { background: #2e9e58; }
+
+
+    @media (max-width: 699px) {
+      html, body { overflow: hidden; height: 100%; }
+
+      #shell {
+        position: fixed; inset: 0; padding: 0;
+        display: flex; flex-direction: column;
+      }
+
+      #header {
+        position: static; height: auto;
+        border-radius: 0; border: none;
+        border-bottom: 1px solid #e5ddd4;
+        box-shadow: none; padding: 10px 14px;
+        flex-shrink: 0;
+      }
+
+      .brandTitle { font-size: 18px; }
+      .brandSub { font-size: 10px; }
+      .toolbar { flex-direction: row; align-items: center; gap: 8px; }
+      .statusRow { display: none; }
+      .controlsRow { display: none; }
+
+      #main {
+        position: static; flex: 1; min-height: 0;
+        flex-direction: column; gap: 0; padding: 0;
+      }
+
+      #leftPanel {
+        flex: 1; min-height: 0;
+        border-radius: 0; border: none;
+        border-bottom: 1px solid #e5ddd4; box-shadow: none;
+      }
+
+      #rightPanel { display: none; }
+
+      #filters { padding: 8px 10px; }
+      .field { font-size: 13px; padding: 9px 10px; }
+      .filterRow { gap: 5px; }
+      .filterRow .select { font-size: 11px; padding: 6px 6px; }
+      .checkChip { font-size: 11px; padding: 6px 8px; }
+
+      .row { padding: 11px 12px 11px 14px; }
+      .stationName { font-size: 14px; }
+      .stationSub { font-size: 12px; }
+      .rowKbps { display: none; }
+
+      #stationList { padding-bottom: 106px; }
+      #mobilePlayer { display: block; }
+    }
+
+    @media (min-width: 700px) {
+      html, body { overflow: hidden; height: 100%; }
+      #mobilePlayer { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div id="shell">
+
+  <div id="header">
+    <div>
+      <div class="brandTitle">Radio<em>Antomatee</em></div>
+      <div class="brandSub" id="topInfo">Wybierz stację z listy.</div>
+    </div>
+    <div class="toolbar">
+      <div class="statusRow">
+        <span class="dot" id="statusDot"></span><span id="statusText">—</span>
+      </div>
+      <div class="controlsRow">
+        <button class="btn" id="btnPrev" title="Poprzednia (←)">⏮</button>
+        <button class="btn btnPlay" id="btnPlay" title="Graj / Pauza (Spacja)">▶&nbsp;Graj</button>
+        <button class="btn" id="btnNext" title="Następna (→)">⏭</button>
+        <button class="btn btnStop" id="btnStop" title="Stop">⏹</button>
+        <div class="volWrap">
+          🔊
+          <input type="range" class="volSlider" id="volSlider" min="0" max="100" value="65" step="1" />
+          <span class="volLabel" id="volLabel">65%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div id="filters">
+        <input class="field" id="search" type="text" placeholder="Szukaj stacji, gatunku, URL… (S)" />
+        <div class="filterRow">
+          <select class="select" id="filterCountry"></select>
+          <select class="select" id="filterGenre"></select>
+          <select class="select" id="sortMode">
+            <option value="name">Sortuj: nazwa</option>
+            <option value="country">Kraj</option>
+            <option value="bitrate">Bitrate</option>
+          </select>
+          <label class="checkChip" title="Tylko ulubione (F)">
+            <input type="checkbox" id="onlyFav" /> ★ Fav
+          </label>
+        </div>
+      </div>
+
+      <div id="listHead">
+        <span>Stacje &nbsp;<span id="countInfo" style="color:#c0b4aa;">0 / 0</span></span>
+        <span id="listHint" style="color:#c0b4aa;">dwuklik = uruchom</span>
+      </div>
+
+      <div id="stationList" tabindex="0"></div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="panelBlock">
+        <div class="panelTitle">Teraz gra</div>
+        <div class="nowTitle" id="nowName">Nic nie gra</div>
+        <div class="nowMeta" id="nowMeta">—</div>
+        <div class="nowUrl" id="nowUrl">—</div>
+        <button class="btn btnWide" id="btnCopy">⧉&nbsp; Kopiuj URL</button>
+        <button class="btn btnWide" id="btnBrowser">🌐&nbsp; Otwórz w przeglądarce</button>
+      </div>
+      <div class="panelBlock">
+        <div class="panelTitle">Narzędzia</div>
+        <button class="btn btnWide" id="btnClear">✕&nbsp; Wyczyść filtry</button>
+        <button class="btn btnWide" id="btnResetStorage" style="color:#8a3820;border-color:#e8ccc4;background:#fff0ec;">🗑&nbsp; Wyczyść ustawienia</button>
+        <div class="hint" style="margin-top:12px;color:#b0a098;font-size:11px;line-height:1.6;">
+          Stacji: <b id="stationTotal" style="color:#7a6e65;">0</b><br/>
+          Źródło: Radio Browser API
+        </div>
+      </div>
+      <div class="panelBlock">
+        <div class="panelTitle">Skróty klawiszowe</div>
+        <div class="hint">
+          <span class="kbdKey">↑ ↓</span> wybór &nbsp; <span class="kbdKey">Enter</span> uruchom<br/>
+          <span class="kbdKey">Spacja</span> graj / pauza<br/>
+          <span class="kbdKey">← →</span> poprz. / nast.<br/>
+          <span class="kbdKey">F</span> ulubione &nbsp; <span class="kbdKey">S</span> szukaj
+        </div>
+      </div>
+      <div class="panelBlock">
+        <div class="panelTitle">Informacja</div>
+        <div class="hint" style="color:#b0a098;">
+          Stacje z <b style="color:#7a6e65;">Radio Browser API</b> — weryfikowane na bieżąco, tylko HTTPS.
+          Polskie Radio przez HLS (hls.js).
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE PLAYER -->
+<div id="mobilePlayer">
+  <div class="mpInner">
+    <span class="mpStatusDot" id="mpStatusDot"></span>
+    <div class="mpInfo">
+      <div class="mpName" id="mpName">Nic nie gra</div>
+      <div class="mpMeta" id="mpMeta">—</div>
+    </div>
+    <div class="mpControls">
+      <button class="mpBtn" id="mpPrev">⏮</button>
+      <button class="mpBtnPlay" id="mpPlay">▶</button>
+      <button class="mpBtn" id="mpNext">⏭</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ── FALLBACK ──────────────────────────────── */
+  var FALLBACK_STREAMS = [
+    "https://an.cdn.eurozet.pl/ant-web.mp3|Antyradio|Rock|PL|128|0",
+    "https://rs9-krk2-cyfronet.rmfstream.pl/RMFFM48|RMF FM|Pop|PL|128|0",
+    "https://rs7-krk2-cyfronet.rmfstream.pl/RMFMAXXX48|RMF MAXXX|Electronic|PL|128|0",
+    "https://n17a-eu.rcs.revma.com/an1ugyygzk8uv|Radio 357|Pop|PL|128|0",
+    "https://n37a-eu.rcs.revma.com/ypqt40u0x1zuv|Radio Nowy Świat|Alternative|PL|128|0",
+    "https://radiostream.pl/tuba10-1.mp3|Tok FM|Talk-News|PL|128|0",
+    "https://radiostream.pl/tuba8-1.mp3|Rock Radio|Rock|PL|128|0",
+    "https://radiostream.pl/tuba38-1.mp3|Radio Pogoda|Pop|PL|128|0",
+    "https://zt05.cdn.eurozet.pl/ZETDAN.mp3|Radio Zet Dance|Dance|PL|128|0",
+    "https://stream11.polskieradio.pl/pr1/pr1.sdp/playlist.m3u8|Polskie Radio Jedynka|Easy Listening|PL|0|0",
+    "https://stream13.polskieradio.pl/pr3/pr3.sdp/playlist.m3u8|Polskie Radio Trojka|Pop|PL|0|0",
+    "https://radio.truckers.fm/|TruckersFM|Sim Radio|EN|320|0"
+  ];
+
+  /* ── STATE ─────────────────────────────────── */
+  var state = {
+    stations:[], view:[], favorites:{},
+    selectedIndex:0, activeId:"", volume:65,
+    filters:{ q:"", country:"", genre:"", onlyFav:false, sort:"name" },
+    connectTimer:null, connectToken:0
+  };
+
+  /* ── AUDIO ─────────────────────────────────── */
+  var audioEl=null, audioState=1, _stopping=false, hlsInstance=null;
+
+  function destroyHls(){ if(hlsInstance){try{hlsInstance.destroy();}catch(e){} hlsInstance=null;} }
+
+  function applyVolume(){ if(audioEl) try{ audioEl.volume=state.volume/100; }catch(e){} }
+
+  function getPlayer(){
+    if(!audioEl){
+      audioEl=new Audio(); audioEl.preload="none";
+      audioEl.addEventListener("playing",function(){ applyVolume(); if(_stopping)return; audioState=3; onPlayStateChange(3); });
+      audioEl.addEventListener("pause",function(){ if(_stopping)return; audioState=2; onPlayStateChange(2); });
+      audioEl.addEventListener("waiting",function(){ if(_stopping)return; audioState=6; onPlayStateChange(6); });
+      audioEl.addEventListener("stalled",function(){ if(_stopping)return; audioState=11; onPlayStateChange(11); });
+      audioEl.addEventListener("error",function(){ if(_stopping)return; onPlayerError(); });
+      audioEl.addEventListener("ended",function(){ if(_stopping)return; audioState=1; onPlayStateChange(1); });
+    }
+    return audioEl;
+  }
+
+  /* ── HELPERS ───────────────────────────────── */
+  function $(id){ return document.getElementById(id); }
+  function bind(el,evt,fn){ if(el) el.addEventListener(evt,fn,false); }
+  function stopEvt(e){ if(e.preventDefault)e.preventDefault(); if(e.stopPropagation)e.stopPropagation(); return false; }
+  function clamp(n,mn,mx){ n=parseInt(n,10); if(isNaN(n))n=mn; return n<mn?mn:n>mx?mx:n; }
+  function trim(s){ return ("" + (s==null?"":s)).replace(/^\s+|\s+$/g,""); }
+  function lower(s){ return trim(s).toLowerCase(); }
+  function safeText(s){ return ("" + (s==null?"":s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function isMobile(){ return window.innerWidth<700; }
+  function uniqSort(arr){
+    var map={},out=[];
+    arr.forEach(function(v){ v=trim(v); if(v&&!map[v]){map[v]=1;out.push(v);} });
+    return out.sort(function(a,b){ a=lower(a);b=lower(b);return a<b?-1:a>b?1:0; });
+  }
+  function hash32(str){
+    var i,h=2166136261;
+    for(i=0;i<str.length;i++){h^=str.charCodeAt(i);h=h+(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);}
+    return ("00000000"+(h>>>0).toString(16)).slice(-8);
+  }
+  function makeId(url,name){ return hash32(url+"|"+name); }
+
+  /* ── PARSE STATIONS ────────────────────────── */
+  function parseStations(raw){
+    var out=[],seen={};
+    raw.forEach(function(r){
+      var p=(""+r).split("|");
+      if(p.length<5)return;
+      var url=trim(p[0]),name=trim(p[1]),genre=trim(p[2]),country=trim(p[3]),bitrate=parseInt(p[4],10)||0;
+      if(!url||!name)return;
+      var key=lower(url)+"|"+lower(name);
+      if(seen[key])return; seen[key]=1;
+      out.push({id:makeId(url,name),url:url,name:name,genre:genre||"Inne",country:country||"?",bitrate:bitrate});
+    });
+    return out.sort(function(a,b){var an=lower(a.name),bn=lower(b.name);return an<bn?-1:an>bn?1:0;});
+  }
+
+  /* ── LOAD FROM API ─────────────────────────── */
+  async function loadAllStations(){
+    var fallback=parseStations(FALLBACK_STREAMS), apiStations=[];
+    try{
+      var resp=await fetch(
+        "https://de1.api.radio-browser.info/json/stations/search?countrycode=PL&lastcheckok=1&hidebroken=true&order=votes&reverse=true&limit=300",
+        {headers:{"User-Agent":"RadioAntomatee/1.0"}}
+      );
+      var data=await resp.json();
+      apiStations=data.filter(function(s){
+        return s.url_resolved&&/^https:\/\//i.test(s.url_resolved)&&s.name&&trim(s.name);
+      }).map(function(s){
+        var tags=(s.tags||"").split(","),genre="";
+        for(var i=0;i<tags.length;i++){var t=trim(tags[i]);if(t){genre=t.charAt(0).toUpperCase()+t.slice(1);break;}}
+        return {id:makeId(s.url_resolved,trim(s.name)),url:s.url_resolved,name:trim(s.name),genre:genre||"Inne",country:"PL",bitrate:s.bitrate||0};
+      });
+    }catch(e){}
+    var seen={},all=[];
+    fallback.forEach(function(st){if(!seen[st.id]){seen[st.id]=1;all.push(st);}});
+    apiStations.forEach(function(st){if(!seen[st.id]){seen[st.id]=1;all.push(st);}});
+    all.sort(function(a,b){var an=lower(a.name),bn=lower(b.name);return an<bn?-1:an>bn?1:0;});
+    return all;
+  }
+
+  /* ── CONFIG ────────────────────────────────── */
+  var STORAGE_KEY="radioantomatee-config";
+  function loadConfig(){
+    try{
+      var raw=localStorage.getItem(STORAGE_KEY); if(!raw)return;
+      var cfg=JSON.parse(raw);
+      if(cfg.volume!=null) state.volume=clamp(cfg.volume,0,100);
+      if(cfg.activeId) state.activeId=""+cfg.activeId;
+      if(cfg.favorites) state.favorites=cfg.favorites;
+      if(cfg.sort) state.filters.sort=""+cfg.sort;
+    }catch(e){}
+  }
+  var _saveT=null;
+  function debouncedSave(){ clearTimeout(_saveT); _saveT=setTimeout(saveConfig,600); }
+  function saveConfig(){
+    try{ localStorage.setItem(STORAGE_KEY,JSON.stringify({version:1,volume:state.volume,activeId:state.activeId,favorites:state.favorites,sort:state.filters.sort})); }catch(e){}
+  }
+
+  /* ── VOLUME ────────────────────────────────── */
+  function setVolume(v){
+    v=clamp(v,0,100); state.volume=v;
+    var sl=$("volSlider"); if(sl)sl.value=v;
+    var lbl=$("volLabel"); if(lbl)lbl.textContent=v+"%";
+    applyVolume();
+    debouncedSave();
+  }
+
+  /* ── STATUS ────────────────────────────────── */
+  function setStatus(kind,text){
+    var cls="dot"+(kind?" "+kind:"");
+    $("statusDot").className=cls;
+    $("statusText").textContent=text||"—";
+    var md=$("mpStatusDot"); if(md){ md.className="mpStatusDot"+(kind?" "+kind:""); }
+  }
+
+  function updatePlayButton(ps){
+    var playing=(ps===3||ps===6||ps===9||ps===11), paused=(ps===2);
+    var btn=$("btnPlay");
+    if(playing){ btn.textContent="⏸\u00a0Pauza"; btn.className="btn btnPlay"; }
+    else if(paused){ btn.textContent="▶\u00a0Start"; btn.className="btn btnResume"; }
+    else{ btn.textContent="▶\u00a0Graj"; btn.className="btn btnPlay"; }
+    var mb=$("mpPlay"); if(!mb)return;
+    if(playing){ mb.textContent="⏸"; mb.className="mpBtnPlay"; }
+    else if(paused){ mb.textContent="▶"; mb.className="mpBtnPlay mpBtnResume"; }
+    else{ mb.textContent="▶"; mb.className="mpBtnPlay"; }
+  }
+
+  /* ── NOW PLAYING ───────────────────────────── */
+  function setNowPlaying(st){
+    if(!st){
+      $("topInfo").textContent="Wybierz stację z listy.";
+      $("nowName").textContent="Nic nie gra"; $("nowMeta").textContent="—"; $("nowUrl").textContent="—";
+      $("mpName").textContent="Nic nie gra"; $("mpMeta").textContent="—";
+      return;
+    }
+    var meta=st.genre+" · "+st.country+(st.bitrate?" · "+st.bitrate+" kbps":"");
+    $("topInfo").textContent=st.name+"  ·  "+meta;
+    $("nowName").textContent=st.name; $("nowMeta").textContent=meta; $("nowUrl").textContent=st.url;
+    $("mpName").textContent=st.name; $("mpMeta").textContent=meta;
+  }
+
+  /* ── LOOKUP ────────────────────────────────── */
+  function getStationById(id){ for(var i=0;i<state.stations.length;i++) if(state.stations[i].id===id)return state.stations[i]; return null; }
+  function getSelectedStation(){ return state.view[state.selectedIndex]||null; }
+  function getActiveStation(){ return state.activeId?getStationById(state.activeId):null; }
+
+  /* ── FILTERS ───────────────────────────────── */
+  function fillSelect(id,fl,vals,sel){
+    var el=$(id); el.length=0; el.options[0]=new Option(fl,"");
+    vals.forEach(function(v){el.options[el.length]=new Option(v,v);}); el.value=sel||"";
+  }
+  function renderFilterOptions(){
+    var cc=[],gc=[];
+    state.stations.forEach(function(s){cc.push(s.country);gc.push(s.genre);});
+    fillSelect("filterCountry","Kraj: wszystkie",uniqSort(cc),state.filters.country);
+    fillSelect("filterGenre","Gatunek: wszystkie",uniqSort(gc),state.filters.genre);
+    $("sortMode").value=state.filters.sort;
+  }
+  function sortView(list){
+    var mode=state.filters.sort;
+    list.sort(function(a,b){
+      if(mode==="bitrate"&&a.bitrate!==b.bitrate)return b.bitrate-a.bitrate;
+      if(mode==="country"){var ac=lower(a.country),bc=lower(b.country);if(ac<bc)return -1;if(ac>bc)return 1;}
+      var an=lower(a.name),bn=lower(b.name);return an<bn?-1:an>bn?1:0;
+    });
+  }
+  function applyFilters(){
+    var q=lower(state.filters.q),country=state.filters.country,genre=state.filters.genre,onlyFav=state.filters.onlyFav,out=[];
+    state.stations.forEach(function(st){
+      if(onlyFav&&!state.favorites[st.id])return;
+      if(country&&st.country!==country)return;
+      if(genre&&st.genre!==genre)return;
+      if(q){var h=lower(st.name+" "+st.genre+" "+st.country+" "+st.url);if(h.indexOf(q)<0)return;}
+      out.push(st);
+    });
+    sortView(out); state.view=out;
+    state.selectedIndex=clamp(state.selectedIndex,0,Math.max(0,out.length-1));
+  }
+
+  /* ── ROWS ──────────────────────────────────── */
+  var rowEls=[];
+  function rowClass(idx,st){ var c="row";if(idx%2===1)c+=" rowAlt";if(idx===state.selectedIndex)c+=" rowSelected";if(st.id===state.activeId)c+=" rowActive";return c; }
+  function updateRowClasses(){ for(var i=0;i<rowEls.length;i++)if(rowEls[i])rowEls[i].className=rowClass(i,state.view[i]); }
+
+  function renderList(){
+    applyFilters();
+    var html=[],list=$("stationList"),prev=0; rowEls=[];
+    try{prev=list.scrollTop;}catch(e){}
+    $("countInfo").textContent=state.view.length+" / "+state.stations.length;
+    $("listHint").textContent=isMobile()?"kliknij = uruchom":"dwuklik = uruchom";
+    if(!state.view.length){list.innerHTML="<div style='padding:18px;color:#b0a098;font-size:13px;'>Brak wyników.</div>";return;}
+    var mob=isMobile();
+    state.view.forEach(function(st,i){
+      var fav=!!state.favorites[st.id];
+      html.push(
+        "<div class='"+rowClass(i,st)+"' data-row='1' data-index='"+i+"'>"+
+          "<span class='rowStar"+(fav?" starFav":"")+"' data-action='fav'>"+(fav?"★":"☆")+"</span>"+
+          "<div class='rowInfo'>"+
+            "<div class='stationName'>"+safeText(st.name)+(st.id===state.activeId?"<span class='playMark'>▶</span>":"")+"</div>"+
+            "<div class='stationSub'>"+safeText(st.genre+" · "+st.country)+"</div>"+
+            (!mob?"<div class='stationUrl'>"+safeText(st.url)+"</div>":"")+
+          "</div>"+
+          "<span class='rowKbps'>"+(st.bitrate?st.bitrate+" kbps":"")+"</span>"+
+        "</div>"
+      );
+    });
+    list.innerHTML=html.join(""); list.scrollTop=prev;
+    list.querySelectorAll("[data-index]").forEach(function(n){var idx=parseInt(n.getAttribute("data-index"),10);if(!isNaN(idx))rowEls[idx]=n;});
+  }
+
+  /* ── SELECTION ─────────────────────────────── */
+  function selectIndex(idx,reveal){
+    if(!state.view.length){state.selectedIndex=0;return;}
+    state.selectedIndex=clamp(idx,0,state.view.length-1); updateRowClasses();
+    if(reveal){var r=rowEls[state.selectedIndex];if(r&&r.scrollIntoView)r.scrollIntoView({block:"nearest"});}
+  }
+
+  /* ── CONNECT TIMER ─────────────────────────── */
+  function stopConnectTimer(){clearTimeout(state.connectTimer);state.connectTimer=null;}
+  function armConnectTimer(){
+    stopConnectTimer(); state.connectToken++;
+    var tok=state.connectToken;
+    state.connectTimer=setTimeout(function(){
+      if(tok!==state.connectToken)return;
+      if(audioState!==3){setStatus("bad","Nie udało się połączyć");updatePlayButton(1);}
+    },15000);
+  }
+
+  /* ── PLAYBACK ──────────────────────────────── */
+  function playUrl(url){
+    try{
+      var a=getPlayer(); _stopping=false; destroyHls();
+      var isHls=/\.m3u8/i.test(url);
+      if(isHls){
+        if(typeof Hls!=="undefined"&&Hls.isSupported()){
+          hlsInstance=new Hls({enableWorker:false});
+          hlsInstance.loadSource(url); hlsInstance.attachMedia(a);
+          hlsInstance.on(Hls.Events.MANIFEST_PARSED,function(){
+            if(_stopping)return; applyVolume();
+            var p=a.play(); if(p&&p.catch)p.catch(function(){if(!_stopping)onPlayerError();});
+          });
+          hlsInstance.on(Hls.Events.ERROR,function(ev,d){if(d.fatal&&!_stopping)onPlayerError();});
+          return true;
+        } else if(a.canPlayType("application/vnd.apple.mpegurl")){
+          a.src=url; applyVolume();
+          var p2=a.play(); if(p2&&p2.catch)p2.catch(function(){if(!_stopping)onPlayerError();}); return true;
+        } else { setStatus("bad","HLS nieobsługiwany"); return false; }
+      }
+      a.src=url; applyVolume();
+      var p3=a.play(); if(p3&&p3.catch)p3.catch(function(){if(!_stopping)onPlayerError();}); return true;
+    }catch(e){return false;}
+  }
+
+  function playStation(st){
+    if(!st)return;
+    state.activeId=st.id; saveConfig();
+    setNowPlaying(st); setStatus("warn","Łączenie…"); updatePlayButton(6);
+    if(!playUrl(st.url)){setStatus("bad","Nie udało się uruchomić");return;}
+    armConnectTimer(); updateRowClasses();
+  }
+  function playSelected(){var st=getSelectedStation();if(st)playStation(st);}
+
+  function togglePlayPause(){
+    if(!state.activeId){playSelected();return;}
+    var a=getPlayer();
+    if(audioState===3||audioState===6||audioState===9||audioState===11){_stopping=false;a.pause();return;}
+    var st=getActiveStation(); if(!st){playSelected();return;}
+    _stopping=false; if(a.src!==st.url)a.src=st.url;
+    applyVolume(); var p=a.play(); if(p&&p.catch)p.catch(function(){onPlayerError();});
+  }
+
+  function stopPlayback(){
+    stopConnectTimer(); _stopping=true; destroyHls();
+    try{var a=getPlayer();a.pause();a.removeAttribute("src");a.load();}catch(e){}
+    audioState=1; _stopping=false; setStatus("","Zatrzymane"); updatePlayButton(1);
+  }
+
+  function nextPrev(dir){
+    if(!state.view.length)return;
+    var idx=state.selectedIndex+dir;
+    if(idx<0)idx=state.view.length-1; if(idx>=state.view.length)idx=0;
+    state.selectedIndex=idx; updateRowClasses();
+    var r=rowEls[state.selectedIndex]; if(r&&r.scrollIntoView)r.scrollIntoView({block:"nearest"});
+    playSelected();
+  }
+
+  function toggleFavorite(id){ if(!id)return; if(state.favorites[id])delete state.favorites[id]; else state.favorites[id]=1; saveConfig(); renderList(); }
+  function clearFilters(){ state.filters.q=state.filters.country=state.filters.genre=""; state.filters.onlyFav=false; $("search").value="";$("filterCountry").value="";$("filterGenre").value="";$("onlyFav").checked=false; state.selectedIndex=0; renderList(); }
+
+  /* ── PLAYER EVENTS ─────────────────────────── */
+  function onPlayStateChange(ns){
+    stopConnectTimer();
+    if(ns===3)setStatus("ok","Połączono · Odtwarzanie");
+    else if(ns===2)setStatus("warn","Pauza");
+    else if(ns===6||ns===11){setStatus("warn","Buforowanie…");armConnectTimer();}
+    else if(ns===1)setStatus("","Zatrzymane");
+    updatePlayButton(ns); updateRowClasses();
+  }
+  function onPlayerError(){ stopConnectTimer(); setStatus("bad","Błąd · Stream niedostępny"); updatePlayButton(1); }
+
+  /* ── CLIPBOARD ─────────────────────────────── */
+  function copyActiveUrl(){ var st=getActiveStation()||getSelectedStation(); if(!st)return; if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(st.url).then(function(){setStatus("ok","Skopiowano");}); else window.prompt("Skopiuj:",st.url); }
+  function openActiveUrl(){ var st=getActiveStation()||getSelectedStation(); if(st)window.open(st.url,"_blank","noopener"); }
+
+  /* ── ROW RESOLVE ───────────────────────────── */
+  function resolveRow(target){ var list=$("stationList"),el=target; while(el&&el!==list){if(el.getAttribute&&el.getAttribute("data-row")==="1")return el;el=el.parentNode;} return null; }
+
+  /* ── BINDINGS ──────────────────────────────── */
+  function bindUi(){
+    var _st=null;
+    bind($("search"),"input",function(){ clearTimeout(_st); _st=setTimeout(function(){state.filters.q=$("search").value||"";state.selectedIndex=0;renderList();},180); });
+    bind($("filterCountry"),"change",function(){state.filters.country=$("filterCountry").value||"";state.selectedIndex=0;renderList();});
+    bind($("filterGenre"),"change",function(){state.filters.genre=$("filterGenre").value||"";state.selectedIndex=0;renderList();});
+    bind($("sortMode"),"change",function(){state.filters.sort=$("sortMode").value||"name";saveConfig();renderList();});
+    bind($("onlyFav"),"click",function(){state.filters.onlyFav=$("onlyFav").checked;state.selectedIndex=0;renderList();});
+
+    bind($("btnClear"),"click",clearFilters);
+    bind($("btnPlay"),"click",togglePlayPause);
+    bind($("btnStop"),"click",stopPlayback);
+    bind($("btnPrev"),"click",function(){nextPrev(-1);});
+    bind($("btnNext"),"click",function(){nextPrev(1);});
+    bind($("btnCopy"),"click",copyActiveUrl);
+    bind($("btnBrowser"),"click",openActiveUrl);
+    bind($("btnResetStorage"),"click",function(){ if(!window.confirm("Wyczyścić ustawienia?"))return; try{localStorage.removeItem(STORAGE_KEY);}catch(e){} state.favorites={};setVolume(65);renderList();setStatus("ok","Wyczyszczono"); });
+
+    /* Desktop volume slider */
+    bind($("volSlider"),"input",function(){setVolume(+$("volSlider").value);});
+
+    /* Mobile controls */
+    bind($("mpPlay"),"click",togglePlayPause);
+    bind($("mpPrev"),"click",function(){nextPrev(-1);});
+    bind($("mpNext"),"click",function(){nextPrev(1);});
+
+    /* List clicks */
+    bind($("stationList"),"click",function(e){
+      var t=e.target,row=resolveRow(t),idx;
+      if(!row)return;
+      idx=parseInt(row.getAttribute("data-index"),10);
+      if(isNaN(idx)||!state.view[idx])return;
+      if(t&&t.getAttribute&&t.getAttribute("data-action")==="fav"){toggleFavorite(state.view[idx].id);return stopEvt(e);}
+      state.selectedIndex=idx; updateRowClasses();
+      if(isMobile())playSelected();
+    });
+    bind($("stationList"),"dblclick",function(e){
+      if(isMobile())return;
+      var t=e.target,row=resolveRow(t),idx;
+      if(!row)return;
+      idx=parseInt(row.getAttribute("data-index"),10);
+      if(isNaN(idx)||!state.view[idx])return;
+      if(t&&t.getAttribute&&t.getAttribute("data-action")==="fav")return stopEvt(e);
+      state.selectedIndex=idx;updateRowClasses();playSelected();return stopEvt(e);
+    });
+
+    /* Keyboard */
+    bind(document,"keydown",function(e){
+      var key=e.keyCode||0,src=e.target;
+      var tag=src&&src.tagName?src.tagName.toLowerCase():"";
+      var typing=(tag==="input"||tag==="textarea"||tag==="select");
+      var st;
+      if(typing){if(key===27){src.blur();return stopEvt(e);}return;}
+      if(key===32){togglePlayPause();return stopEvt(e);}
+      if(key===13){playSelected();return stopEvt(e);}
+      if(key===83){$("search").focus();return stopEvt(e);}
+      if(key===38){selectIndex(state.selectedIndex-1,true);return stopEvt(e);}
+      if(key===40){selectIndex(state.selectedIndex+1,true);return stopEvt(e);}
+      if(key===37){nextPrev(-1);return stopEvt(e);}
+      if(key===39){nextPrev(1);return stopEvt(e);}
+      if(key===70){st=getSelectedStation();if(st)toggleFavorite(st.id);}
+      if(key===27){clearFilters();return stopEvt(e);}
+    });
+
+    /* Resize */
+    var _rt=null;
+    window.addEventListener("resize",function(){clearTimeout(_rt);_rt=setTimeout(renderList,200);});
+  }
+
+  /* ── INIT ──────────────────────────────────── */
+  window.addEventListener("DOMContentLoaded",async function(){
+    loadConfig();
+    renderFilterOptions();
+    $("onlyFav").checked=!!state.filters.onlyFav;
+    getPlayer();
+    setVolume(state.volume);
+    updatePlayButton(1);
+    bindUi();
+
+    $("stationList").innerHTML="<div style='padding:22px 18px;color:#b0a098;font-size:13px;'>⏳ Ładowanie stacji…</div>";
+    setStatus("warn","Ładowanie stacji…");
+
+    state.stations=await loadAllStations();
+
+    if(state.activeId){
+      var st=getStationById(state.activeId);
+      setNowPlaying(st||null);
+      if(st){
+        renderList();
+        for(var i=0;i<state.view.length;i++){if(state.view[i]&&state.view[i].id===state.activeId){state.selectedIndex=i;break;}}
+      }
+    }else{setNowPlaying(null);}
+
+    renderFilterOptions();
+    renderList();
+    setStatus("","Gotowe — "+state.stations.length+" stacji");
+    $("stationTotal").textContent=state.stations.length;
+  });
+</script>
+</body>
+</html>
