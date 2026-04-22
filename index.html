@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#f7f1e8" />
+  <title>Radio Antomatee</title>
+
+  <!-- Favicon (SVG, inline) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23d54d1d'/><stop offset='1' stop-color='%239a2e0a'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><circle cx='32' cy='36' r='5' fill='%23fffbf5'/><path d='M18 36a14 14 0 0 1 28 0' stroke='%23fffbf5' stroke-width='3' stroke-linecap='round' fill='none'/><path d='M11 36a21 21 0 0 1 42 0' stroke='%23fffbf5' stroke-width='2.5' stroke-linecap='round' fill='none' opacity='.55'/><circle cx='32' cy='17' r='2.4' fill='%23fffbf5'/></svg>" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- HLS for Polish Radio streams -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    :root {
+      --bg: #f7f1e8;
+      --bg-grain: #ede3d4;
+      --surface: #fffbf5;
+      --surface-2: #faf3e8;
+      --surface-3: #f2e8d8;
+      --border: #e8dcc8;
+      --border-strong: #d8c8b0;
+      --ink: #1a0f08;
+      --ink-2: #3d2b1f;
+      --muted: #8a7a6d;
+      --muted-2: #b0a090;
+      --accent: #c2410c;
+      --accent-dark: #9a2e0a;
+      --accent-soft: #fdf0e4;
+      --ok: #15803d;
+      --warn: #b8860b;
+      --bad: #b91c1c;
+      --shadow-sm: 0 1px 2px rgba(90,50,20,.05), 0 2px 8px rgba(90,50,20,.04);
+      --shadow-md: 0 2px 6px rgba(90,50,20,.06), 0 10px 30px rgba(90,50,20,.08);
+      --shadow-lg: 0 4px 12px rgba(90,50,20,.08), 0 20px 60px rgba(90,50,20,.12);
+      --radius: 18px;
+      --radius-sm: 10px;
+      --radius-xs: 8px;
+      --font-display: "Instrument Serif", Georgia, "Book Antiqua", serif;
+      --font-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      height: 100%;
+      font-family: var(--font-ui);
+      font-weight: 500;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      /* Subtle grain via layered radial gradients */
+      background-image:
+        radial-gradient(at 20% 10%, rgba(194,65,12,.05) 0, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(194,65,12,.04) 0, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(154,46,10,.02) 0, transparent 60%);
+      background-attachment: fixed;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SHELL LAYOUT
+    ══════════════════════════════════════════════════════════ */
+    #shell {
+      position: absolute;
+      inset: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── HEADER ────────────────────────────────────────────── */
+    #header {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brandGroup { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .brandMark {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      display: grid; place-items: center;
+      box-shadow: 0 4px 12px rgba(194,65,12,.3), inset 0 1px 0 rgba(255,255,255,.2);
+      flex-shrink: 0;
+    }
+    .brandMark svg { width: 26px; height: 26px; }
+
+    .brandText { min-width: 0; }
+    .brandTitle {
+      font-family: var(--font-display);
+      font-size: 28px; font-weight: 400; line-height: 1;
+      letter-spacing: -.5px; color: var(--ink);
+    }
+    .brandTitle em {
+      color: var(--accent);
+      font-style: italic;
+    }
+    .brandSub {
+      font-size: 11px; font-weight: 500;
+      color: var(--muted); margin-top: 4px;
+      letter-spacing: .2px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .liveDot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted-2); transition: background .3s;
+    }
+    .liveDot.ok {
+      background: #22c55e;
+      box-shadow: 0 0 0 0 rgba(34,197,94,.7);
+      animation: pulse 2s infinite;
+    }
+    .liveDot.warn { background: var(--warn); animation: pulse-warn 1.3s infinite; }
+    .liveDot.bad { background: var(--bad); }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.6); }
+      70%  { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+    @keyframes pulse-warn {
+      0%,100% { opacity: 1; }
+      50%     { opacity: .4; }
+    }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    /* Circular control buttons in header */
+    .ctrlBtn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink-2);
+      display: grid; place-items: center;
+      cursor: pointer; font-size: 13px;
+      transition: all .18s ease;
+      font-family: inherit;
+    }
+    .ctrlBtn:hover {
+      background: var(--surface-2);
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+    .ctrlBtn:active { transform: translateY(0); }
+    .ctrlBtn svg { width: 16px; height: 16px; }
+
+    .ctrlBtn.primary {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: #fff; border: none;
+      box-shadow: 0 4px 16px rgba(194,65,12,.35);
+    }
+    .ctrlBtn.primary:hover {
+      box-shadow: 0 6px 20px rgba(194,65,12,.45);
+      transform: translateY(-1px);
+    }
+    .ctrlBtn.primary svg { width: 18px; height: 18px; }
+    .ctrlBtn.playing {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      box-shadow: 0 4px 16px rgba(22,163,74,.35);
+    }
+    .ctrlBtn.playing:hover { box-shadow: 0 6px 20px rgba(22,163,74,.45); }
+
+    /* Volume control */
+    .volWrap {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px 8px 12px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      height: 40px;
+    }
+    .volWrap svg { width: 16px; height: 16px; color: var(--muted); flex-shrink: 0; }
+    .volSlider {
+      -webkit-appearance: none; appearance: none;
+      width: 90px; height: 4px;
+      border-radius: 2px;
+      background: var(--border-strong);
+      outline: none; cursor: pointer;
+    }
+    .volSlider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(194,65,12,.4);
+      transition: transform .15s;
+    }
+    .volSlider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    .volSlider::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent); border: none;
+      cursor: pointer; box-shadow: 0 2px 6px rgba(194,65,12,.4);
+    }
+    .volLabel {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      min-width: 30px; text-align: right; font-variant-numeric: tabular-nums;
+    }
+
+    /* ── MAIN ──────────────────────────────────────────────── */
+    #main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      gap: 14px;
+    }
+
+    #leftPanel {
+      flex: 1; min-width: 0;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #rightPanel {
+      width: 380px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* ── FILTERS + TOOLS (combined) ────────────────────────── */
+    #filterSection {
+      flex-shrink: 0;
+      padding: 16px 18px 14px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .searchField {
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .searchField svg {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      width: 15px; height: 15px;
+      color: var(--muted-2);
+      pointer-events: none;
+    }
+    .searchField input {
+      width: 100%;
+      padding: 11px 14px 11px 38px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 13px; font-weight: 500;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .searchField input::placeholder { color: var(--muted-2); }
+    .searchField input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(194,65,12,.12);
+    }
+
+    .filterRow {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .select {
+      flex: 1; min-width: 0;
+      padding: 8px 10px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink-2);
+      font-size: 12px; font-weight: 500;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .select:hover { border-color: var(--border-strong); }
+    .select:focus { border-color: var(--accent); }
+
+    .chipBtn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 12px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 12px; font-weight: 600;
+      font-family: inherit;
+      color: var(--ink-2);
+      cursor: pointer;
+      user-select: none;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .chipBtn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+    .chipBtn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+    .chipBtn svg { width: 13px; height: 13px; }
+    .chipBtn input[type=checkbox] { display: none; }
+
+    .toolRow {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+    }
+    .toolRow .chipBtn { flex: 1; justify-content: center; }
+    .chipBtn.danger:hover {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: var(--bad);
+    }
+
+    /* ── LIST HEADER ───────────────────────────────────────── */
+    #listHead {
+      flex-shrink: 0;
+      padding: 10px 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .3px;
+      display: flex; justify-content: space-between;
+      text-transform: uppercase;
+    }
+    #countInfo { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+    #listHint { color: var(--muted-2); text-transform: none; letter-spacing: 0; font-weight: 500; }
+    .brokenBadge {
+      display: inline-flex; align-items: center;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #fef2f2;
+      color: var(--bad);
+      font-size: 10px; font-weight: 700;
+      text-transform: none; letter-spacing: .1px;
+      border: 1px solid #fecaca;
+    }
+
+    /* ── STATION LIST ──────────────────────────────────────── */
+    #stationList {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+    #stationList::-webkit-scrollbar { width: 6px; }
+    #stationList::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+    #stationList::-webkit-scrollbar-track { background: transparent; }
+
+    .row {
+      padding: 12px 18px 12px 16px;
+      border-bottom: 1px solid var(--surface-3);
+      background: var(--surface);
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      display: flex; align-items: center; gap: 12px;
+      transition: background .13s, border-color .13s;
+      position: relative;
+    }
+    .row:hover { background: var(--surface-2); }
+    .rowSelected { background: var(--surface-3) !important; }
+    .rowActive {
+      background: var(--accent-soft) !important;
+      border-left-color: var(--accent) !important;
+    }
+
+    .rowStar {
+      font-size: 18px;
+      cursor: pointer;
+      user-select: none;
+      color: var(--muted-2);
+      flex-shrink: 0;
+      transition: color .15s, transform .15s;
+      line-height: 1;
+      padding: 4px;
+    }
+    .rowStar:hover { color: #eab308; transform: scale(1.15); }
+    .starFav { color: #eab308 !important; }
+
+    .rowInfo { flex: 1; min-width: 0; }
+    .stationName {
+      font-size: 14px; font-weight: 700;
+      color: var(--ink); line-height: 1.25;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stationSub {
+      margin-top: 3px;
+      font-size: 11px; font-weight: 500;
+      color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .stationSub .dot-sep { opacity: .4; margin: 0 4px; }
+    .rowMeta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .rowKbps {
+      font-size: 10px; font-weight: 600;
+      color: var(--muted-2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      font-variant-numeric: tabular-nums;
+    }
+    .rowActive .rowKbps { background: rgba(194,65,12,.1); color: var(--accent-dark); }
+
+    /* Equalizer icon for active row */
+    .miniEq {
+      display: flex; align-items: flex-end;
+      gap: 2px; height: 14px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .miniEq span {
+      display: block;
+      width: 2.5px;
+      background: currentColor;
+      border-radius: 1px;
+      animation: eqBar 1s ease-in-out infinite;
+    }
+    .miniEq span:nth-child(1) { height: 60%; animation-delay: -.8s; }
+    .miniEq span:nth-child(2) { height: 100%; animation-delay: -.3s; }
+    .miniEq span:nth-child(3) { height: 40%; animation-delay: -.6s; }
+    .miniEq.paused span { animation-play-state: paused; opacity: .5; }
+
+    @keyframes eqBar {
+      0%,100% { transform: scaleY(0.25); }
+      50%     { transform: scaleY(1); }
+    }
+
+    /* ── NOW PLAYING CARD ──────────────────────────────────── */
+    .panelBlock {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 22px 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .panelTitle {
+      font-size: 10px; font-weight: 700;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panelTitle::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* Hero now-playing block */
+    .npHero {
+      position: relative;
+      min-height: 200px;
+    }
+
+    .npArt {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 220px;
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,.15), transparent 60%),
+        linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 70%, #5a1a04 100%);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(154,46,10,.25), inset 0 1px 0 rgba(255,255,255,.1);
+    }
+
+    /* Concentric radio-wave animation */
+    .npArt::before, .npArt::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.18);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .npArt::before {
+      width: 60%; height: 60%;
+      animation: waveOut 3s ease-out infinite;
+    }
+    .npArt::after {
+      width: 60%; height: 60%;
+      animation: waveOut 3s ease-out infinite;
+      animation-delay: 1.5s;
+    }
+    @keyframes waveOut {
+      0%   { width: 20%; height: 20%; opacity: 1; }
+      100% { width: 120%; height: 120%; opacity: 0; }
+    }
+    .npArt.idle::before, .npArt.idle::after {
+      animation-play-state: paused;
+      opacity: 0;
+    }
+
+    .npArtCenter {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 48%;
+      text-align: center;
+      color: #fff;
+    }
+    .npArtCenter .npArtMark {
+      width: 46px; height: 46px;
+      margin: 0 auto 6px;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,.12);
+      border-radius: 50%;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,.2);
+    }
+    .npArtCenter .npArtMark svg { width: 22px; height: 22px; color: #fff; }
+    .npArtStatus {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: .9;
+    }
+
+    /* Live equalizer on art */
+    .npEq {
+      position: absolute;
+      bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: flex-end;
+      gap: 3px; height: 24px;
+      opacity: .85;
+    }
+    .npEq span {
+      display: block;
+      width: 3px;
+      background: #fff;
+      border-radius: 2px;
+      animation: eqBar 1s ease-in-out infinite;
+    }
+    .npEq span:nth-child(1) { height: 30%; animation-delay: -.9s; }
+    .npEq span:nth-child(2) { height: 70%; animation-delay: -.2s; }
+    .npEq span:nth-child(3) { height: 100%; animation-delay: -.6s; }
+    .npEq span:nth-child(4) { height: 50%; animation-delay: -.4s; }
+    .npEq span:nth-child(5) { height: 85%; animation-delay: -.1s; }
+    .npEq.paused span { animation-play-state: paused; opacity: .4; }
+
+    .npStation {
+      font-family: var(--font-display);
+      font-size: 28px; font-weight: 400;
+      line-height: 1.15;
+      color: var(--ink);
+      letter-spacing: -.3px;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .npStation .idle { color: var(--muted-2); font-style: italic; }
+
+    .npMeta {
+      font-size: 12px; font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .2px;
+      margin-bottom: 14px;
+    }
+
+    /* ── KEYBOARD HINTS ────────────────────────────────────── */
+    .kbdList {
+      display: flex; flex-direction: column; gap: 10px;
+      font-size: 12px; color: var(--muted);
+      font-weight: 500;
+    }
+    .kbdRow {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+    }
+    .kbdRow .kbdLabel { color: var(--ink-2); font-weight: 500; }
+    .kbdKeys { display: inline-flex; gap: 4px; flex-shrink: 0; }
+    .kbdKey {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 22px; height: 22px;
+      padding: 0 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      font-size: 10px; font-weight: 700;
+      color: var(--ink-2);
+      font-family: inherit;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       MOBILE PLAYER
+    ══════════════════════════════════════════════════════════ */
+    #mobilePlayer {
+      display: none;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 24px rgba(90,50,20,.12);
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .mpInner {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+    }
+    .mpArt {
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      display: grid; place-items: center;
+      color: #fff; flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(194,65,12,.3);
+      position: relative; overflow: hidden;
+    }
+    .mpArt .mpEq {
+      display: flex; align-items: flex-end; gap: 2px; height: 18px;
+    }
+    .mpArt .mpEq span {
+      display: block; width: 2.5px; background: #fff;
+      border-radius: 1px;
+      animation: eqBar 1s ease-in-out infinite;
+    }
+    .mpArt .mpEq span:nth-child(1) { height: 40%; animation-delay: -.6s; }
+    .mpArt .mpEq span:nth-child(2) { height: 100%; animation-delay: -.2s; }
+    .mpArt .mpEq span:nth-child(3) { height: 60%; animation-delay: -.4s; }
+    .mpArt.paused .mpEq span { animation-play-state: paused; opacity: .5; }
+    .mpArt svg { width: 22px; height: 22px; }
+
+    .mpInfo { flex: 1; min-width: 0; }
+    .mpName {
+      font-size: 14px; font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mpMeta {
+      font-size: 11px; font-weight: 500;
+      color: var(--muted); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mpControls { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .mpBtn {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface-2);
+      display: grid; place-items: center;
+      cursor: pointer; flex-shrink: 0;
+      color: var(--ink-2);
+    }
+    .mpBtn svg { width: 16px; height: 16px; }
+    .mpBtnPlay {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      border: none; color: #fff;
+      border-radius: 50%; display: grid; place-items: center;
+      cursor: pointer; flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(194,65,12,.35);
+    }
+    .mpBtnPlay.playing {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      box-shadow: 0 3px 10px rgba(22,163,74,.35);
+    }
+    .mpBtnPlay svg { width: 18px; height: 18px; }
+
+    /* ══════════════════════════════════════════════════════════
+       MOBILE RESPONSIVE
+    ══════════════════════════════════════════════════════════ */
+    @media (max-width: 760px) {
+      #shell { padding: 0; gap: 0; }
+      #header {
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid var(--border);
+        box-shadow: none;
+        padding: 10px 14px;
+      }
+      .brandMark { width: 40px; height: 40px; border-radius: 10px; }
+      .brandMark svg { width: 22px; height: 22px; }
+      .brandTitle { font-size: 22px; }
+      .brandSub { font-size: 10px; }
+      .toolbar .ctrlBtn:not(.primary),
+      .toolbar .volWrap { display: none; }
+      .toolbar .ctrlBtn.primary { width: 44px; height: 44px; }
+
+      #main { padding: 0; gap: 0; }
+      #leftPanel {
+        border-radius: 0;
+        border: none;
+        border-bottom: none;
+        box-shadow: none;
+      }
+      #rightPanel { display: none; }
+
+      #filterSection { padding: 10px 12px; }
+      .searchField input { font-size: 14px; padding: 10px 14px 10px 36px; }
+      .filterRow { gap: 5px; }
+      .select, .chipBtn { font-size: 11px; padding: 7px 9px; }
+
+      .row { padding: 12px 14px; }
+      .stationName { font-size: 14px; }
+      .rowKbps { display: none; }
+
+      #stationList { padding-bottom: 110px; }
+      #mobilePlayer { display: block; }
+    }
+
+    @media (min-width: 761px) {
+      #mobilePlayer { display: none !important; }
+    }
+
+    /* Empty state */
+    .emptyState {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted-2);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .emptyState .emptyIcon {
+      margin: 0 auto 14px;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      display: grid; place-items: center;
+      color: var(--muted-2);
+    }
+
+    /* Loading shimmer */
+    .loadingState {
+      padding: 30px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .loadingPulse {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-right: 8px;
+      animation: pulse-warn 1.2s infinite;
+    }
+  </style>
+</head>
+<body>
+
+<div id="shell">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="brandGroup">
+      <div class="brandMark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="14" r="2.2" fill="#fff"/>
+          <path d="M6.5 14a5.5 5.5 0 0 1 11 0" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M3 14a9 9 0 0 1 18 0" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".65"/>
+          <circle cx="12" cy="5.5" r="1" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="brandText">
+        <div class="brandTitle">Radio <em>Antomatee</em></div>
+        <div class="brandSub">
+          <span class="liveDot" id="statusDot"></span>
+          <span id="statusText">Ładowanie…</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="ctrlBtn" id="btnPrev" title="Poprzednia (←)" aria-label="Poprzednia">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 5v14M18 5L8 12l10 7V5z" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="ctrlBtn primary" id="btnPlay" title="Graj / Pauza (spacja)" aria-label="Graj">
+        <svg id="btnPlayIcon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 5l12 7-12 7V5z"/>
+        </svg>
+      </button>
+      <button class="ctrlBtn" id="btnNext" title="Następna (→)" aria-label="Następna">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 5v14M6 5l10 7-10 7V5z" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="ctrlBtn" id="btnStop" title="Stop" aria-label="Stop">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="12" height="12" rx="1.5"/>
+        </svg>
+      </button>
+      <div class="volWrap" title="Głośność">
+        <svg id="volIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/>
+          <path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <input type="range" class="volSlider" id="volSlider" min="0" max="100" value="65" step="1" />
+        <span class="volLabel" id="volLabel">65%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="leftPanel">
+
+      <!-- FILTERS + TOOLS (combined) -->
+      <div id="filterSection">
+        <div class="searchField">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <input id="search" type="text" placeholder="Szukaj stacji, gatunku…" autocomplete="off" />
+        </div>
+        <div class="filterRow">
+          <select class="select" id="filterCountry"></select>
+          <select class="select" id="filterGenre"></select>
+          <select class="select" id="sortMode">
+            <option value="name">A — Z</option>
+            <option value="country">Kraj</option>
+            <option value="bitrate">Bitrate</option>
+          </select>
+          <label class="chipBtn" id="onlyFavChip">
+            <input type="checkbox" id="onlyFav" />
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2.5l2.9 6.3 6.9.7-5.2 4.7 1.5 6.8L12 17.7 5.9 21l1.5-6.8L2.2 9.5l6.9-.7L12 2.5z"/>
+            </svg>
+            Ulubione
+          </label>
+        </div>
+        <div class="toolRow">
+          <button class="chipBtn" id="btnClear">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Wyczyść filtry
+          </button>
+          <button class="chipBtn" id="btnUnblock" title="Odblokuj stacje z błędami">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            Odblokuj
+          </button>
+          <button class="chipBtn danger" id="btnResetStorage">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <div id="listHead">
+        <span>Stacje · <span id="countInfo">0 / 0</span><span id="brokenBadge" class="brokenBadge" style="display:none;"></span></span>
+        <span id="listHint">dwuklik = uruchom</span>
+      </div>
+
+      <div id="stationList" tabindex="0"></div>
+    </div>
+
+    <!-- RIGHT PANEL: NOW PLAYING -->
+    <div id="rightPanel">
+      <div class="panelBlock">
+        <div class="panelTitle">Teraz gra</div>
+        <div class="npHero">
+          <div class="npArt idle" id="npArt">
+            <div class="npArtCenter" id="npArtCenter">
+              <div class="npArtMark">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="14" r="2" fill="currentColor"/>
+                  <path d="M6.5 14a5.5 5.5 0 0 1 11 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                  <path d="M3 14a9 9 0 0 1 18 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+                </svg>
+              </div>
+              <div class="npArtStatus" id="npArtStatus">Offline</div>
+            </div>
+            <div class="npEq paused" id="npEq">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="npStation" id="npStation"><span class="idle">Wybierz stację</span></div>
+          <div class="npMeta" id="npMeta">—</div>
+        </div>
+      </div>
+
+      <div class="panelBlock">
+        <div class="panelTitle">Skróty klawiaturowe</div>
+        <div class="kbdList">
+          <div class="kbdRow">
+            <span class="kbdLabel">Wybór stacji</span>
+            <span class="kbdKeys"><span class="kbdKey">↑</span><span class="kbdKey">↓</span></span>
+          </div>
+          <div class="kbdRow">
+            <span class="kbdLabel">Uruchom wybraną</span>
+            <span class="kbdKeys"><span class="kbdKey">Enter</span></span>
+          </div>
+          <div class="kbdRow">
+            <span class="kbdLabel">Graj / Pauza</span>
+            <span class="kbdKeys"><span class="kbdKey">Spacja</span></span>
+          </div>
+          <div class="kbdRow">
+            <span class="kbdLabel">Poprzednia / następna</span>
+            <span class="kbdKeys"><span class="kbdKey">←</span><span class="kbdKey">→</span></span>
+          </div>
+          <div class="kbdRow">
+            <span class="kbdLabel">Ulubione</span>
+            <span class="kbdKeys"><span class="kbdKey">F</span></span>
+          </div>
+          <div class="kbdRow">
+            <span class="kbdLabel">Szukaj</span>
+            <span class="kbdKeys"><span class="kbdKey">S</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE PLAYER -->
+<div id="mobilePlayer">
+  <div class="mpInner">
+    <div class="mpArt paused" id="mpArt">
+      <div class="mpEq"><span></span><span></span><span></span></div>
+    </div>
+    <div class="mpInfo">
+      <div class="mpName" id="mpName">Wybierz stację</div>
+      <div class="mpMeta" id="mpMeta">—</div>
+    </div>
+    <div class="mpControls">
+      <button class="mpBtn" id="mpPrev" aria-label="Poprzednia">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 5v14M18 5L8 12l10 7V5z"/>
+        </svg>
+      </button>
+      <button class="mpBtnPlay" id="mpPlay" aria-label="Graj">
+        <svg id="mpPlayIcon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 5l12 7-12 7V5z"/>
+        </svg>
+      </button>
+      <button class="mpBtn" id="mpNext" aria-label="Następna">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 5v14M6 5l10 7-10 7V5z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   API MIRRORS — all stations come from Radio Browser
+══════════════════════════════════════════════════════════ */
+var API_MIRRORS = [
+  "https://de1.api.radio-browser.info",
+  "https://de2.api.radio-browser.info",
+  "https://fr1.api.radio-browser.info",
+  "https://nl1.api.radio-browser.info",
+  "https://at1.api.radio-browser.info"
+];
+
+/* Broken stations auto-expire after this many ms (24 h).
+   A station that fails to play gets temporarily hidden. */
+var BROKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+var state = {
+  stations: [], view: [], favorites: {},
+  selectedIndex: 0, activeId: "",
+  volume: 65,
+  filters: { q: "", country: "", genre: "", onlyFav: false, sort: "name" },
+  connectTimer: null, connectToken: 0,
+  brokenStations: {} // { stationId: timestampWhenMarkedBroken }
+};
+
+/* ══════════════════════════════════════════════════════════
+   AUDIO
+══════════════════════════════════════════════════════════ */
+var audioEl = null, audioState = 1, _stopping = false, hlsInstance = null;
+
+function destroyHls(){ if(hlsInstance){try{hlsInstance.destroy();}catch(e){} hlsInstance=null;} }
+function applyVolume(){ if(audioEl) try{ audioEl.volume=state.volume/100; }catch(e){} }
+
+function getPlayer(){
+  if(!audioEl){
+    audioEl = new Audio();
+    audioEl.preload = "none";
+    audioEl.crossOrigin = "anonymous";
+    audioEl.addEventListener("playing", function(){ applyVolume(); if(_stopping)return; audioState=3; onPlayStateChange(3); });
+    audioEl.addEventListener("pause",   function(){ if(_stopping)return; audioState=2; onPlayStateChange(2); });
+    audioEl.addEventListener("waiting", function(){ if(_stopping)return; audioState=6; onPlayStateChange(6); });
+    audioEl.addEventListener("stalled", function(){ if(_stopping)return; audioState=11; onPlayStateChange(11); });
+    audioEl.addEventListener("error",   function(){ if(_stopping)return; onPlayerError(); });
+    audioEl.addEventListener("ended",   function(){ if(_stopping)return; audioState=1; onPlayStateChange(1); });
+  }
+  return audioEl;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════ */
+function $(id){ return document.getElementById(id); }
+function bind(el,evt,fn){ if(el) el.addEventListener(evt,fn,false); }
+function stopEvt(e){ if(e.preventDefault)e.preventDefault(); if(e.stopPropagation)e.stopPropagation(); return false; }
+function clamp(n,mn,mx){ n=parseInt(n,10); if(isNaN(n))n=mn; return n<mn?mn:n>mx?mx:n; }
+function trim(s){ return ("" + (s==null?"":s)).replace(/^\s+|\s+$/g,""); }
+function lower(s){ return trim(s).toLowerCase(); }
+function safeText(s){ return ("" + (s==null?"":s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function isMobile(){ return window.innerWidth < 761; }
+function uniqSort(arr){
+  var map={},out=[];
+  arr.forEach(function(v){ v=trim(v); if(v&&!map[v]){map[v]=1;out.push(v);} });
+  return out.sort(function(a,b){ a=lower(a);b=lower(b);return a<b?-1:a>b?1:0; });
+}
+function hash32(str){
+  var i,h=2166136261;
+  for(i=0;i<str.length;i++){h^=str.charCodeAt(i);h=h+(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);}
+  return ("00000000"+(h>>>0).toString(16)).slice(-8);
+}
+function makeId(url,name){ return hash32(url+"|"+name); }
+
+/* ══════════════════════════════════════════════════════════
+   STATIONS LOADING (Radio Browser API only)
+══════════════════════════════════════════════════════════ */
+async function fetchWithTimeout(url, ms){
+  var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+  var timer = setTimeout(function(){ if (ctrl) { try { ctrl.abort(); } catch(e){} } }, ms);
+  try {
+    var resp = await fetch(url, {
+      headers: { "Accept": "application/json" },
+      signal: ctrl ? ctrl.signal : undefined
+    });
+    return resp;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* Try each Radio Browser mirror in random order until one answers in time */
+async function fetchFromAnyMirror(path, perMirrorMs){
+  var mirrors = API_MIRRORS.slice();
+  for (var i = mirrors.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = mirrors[i]; mirrors[i] = mirrors[j]; mirrors[j] = tmp;
+  }
+  for (var k = 0; k < mirrors.length; k++) {
+    try {
+      var resp = await fetchWithTimeout(mirrors[k] + path, perMirrorMs);
+      if (resp && resp.ok) {
+        var data = await resp.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch(e) { /* try next mirror */ }
+  }
+  return null;
+}
+
+async function loadAllStations(){
+  var apiData = await fetchFromAnyMirror(
+    "/json/stations/search?countrycode=PL&lastcheckok=1&hidebroken=true&order=votes&reverse=true&limit=500",
+    8000
+  );
+  if (!apiData) return [];
+
+  var seen = {}, all = [];
+  apiData.forEach(function(s){
+    if (!s.url_resolved || !/^https:\/\//i.test(s.url_resolved)) return;
+    if (!s.name || !trim(s.name)) return;
+    var id = makeId(s.url_resolved, trim(s.name));
+    if (seen[id]) return; seen[id] = 1;
+    var tags = (s.tags||"").split(","), genre = "";
+    for (var i = 0; i < tags.length; i++){
+      var t = trim(tags[i]);
+      if (t) { genre = t.charAt(0).toUpperCase() + t.slice(1); break; }
+    }
+    all.push({
+      id: id,
+      url: s.url_resolved,
+      name: trim(s.name),
+      genre: genre || "Inne",
+      country: "PL",
+      bitrate: s.bitrate || 0
+    });
+  });
+  all.sort(function(a,b){ var an=lower(a.name), bn=lower(b.name); return an<bn?-1:an>bn?1:0; });
+  return all;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CONFIG (localStorage — survives reloads)
+══════════════════════════════════════════════════════════ */
+var STORAGE_KEY = "radioantomatee-config";
+function loadConfig(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY); if(!raw) return;
+    var cfg = JSON.parse(raw);
+    if(cfg.volume   != null) state.volume = clamp(cfg.volume,0,100);
+    if(cfg.activeId)         state.activeId = "" + cfg.activeId;
+    if(cfg.favorites)        state.favorites = cfg.favorites;
+    if(cfg.sort)             state.filters.sort = "" + cfg.sort;
+    if(cfg.brokenStations)   state.brokenStations = cfg.brokenStations;
+  } catch(e){}
+  pruneBrokenStations();
+}
+var _saveT = null;
+function debouncedSave(){ clearTimeout(_saveT); _saveT = setTimeout(saveConfig, 600); }
+function saveConfig(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 3,
+      volume: state.volume,
+      activeId: state.activeId,
+      favorites: state.favorites,
+      sort: state.filters.sort,
+      brokenStations: state.brokenStations
+    }));
+  } catch(e){}
+}
+
+/* ══════════════════════════════════════════════════════════
+   BROKEN STATIONS — auto-hide stations that fail to stream
+══════════════════════════════════════════════════════════ */
+function pruneBrokenStations(){
+  var now = Date.now(), changed = false;
+  for (var id in state.brokenStations){
+    if (!state.brokenStations.hasOwnProperty(id)) continue;
+    var ts = +state.brokenStations[id] || 0;
+    if (now - ts > BROKEN_EXPIRY_MS) {
+      delete state.brokenStations[id];
+      changed = true;
+    }
+  }
+  if (changed) saveConfig();
+}
+
+function isBroken(id){
+  if (!id || !state.brokenStations[id]) return false;
+  var ts = +state.brokenStations[id] || 0;
+  if (Date.now() - ts > BROKEN_EXPIRY_MS) {
+    delete state.brokenStations[id];
+    return false;
+  }
+  return true;
+}
+
+function markStationBroken(id){
+  if (!id) return;
+  state.brokenStations[id] = Date.now();
+  saveConfig();
+}
+
+function brokenCount(){
+  pruneBrokenStations();
+  var n = 0;
+  for (var k in state.brokenStations) {
+    if (state.brokenStations.hasOwnProperty(k)) n++;
+  }
+  return n;
+}
+
+function clearBrokenStations(){
+  state.brokenStations = {};
+  saveConfig();
+  renderList();
+  updateBrokenBadge();
+  setStatus("ok", "Lista zablokowanych wyczyszczona");
+}
+
+function updateBrokenBadge(){
+  var n = brokenCount();
+  var el = $("brokenBadge");
+  if (!el) return;
+  if (n > 0) {
+    el.style.display = "inline-flex";
+    el.textContent = n + " zablokowana" + (n === 1 ? "" : (n < 5 ? "e" : "ych"));
+  } else {
+    el.style.display = "none";
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   VOLUME
+══════════════════════════════════════════════════════════ */
+function setVolume(v){
+  v = clamp(v,0,100); state.volume = v;
+  var sl=$("volSlider"); if(sl) sl.value = v;
+  var lbl=$("volLabel"); if(lbl) lbl.textContent = v + "%";
+  applyVolume();
+  debouncedSave();
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATUS
+══════════════════════════════════════════════════════════ */
+function setStatus(kind, text){
+  var cls = "liveDot" + (kind ? " " + kind : "");
+  $("statusDot").className = cls;
+  $("statusText").textContent = text || "—";
+  updateArtStatus(kind, text);
+}
+
+function updateArtStatus(kind, text){
+  var artStatus = $("npArtStatus");
+  if (!artStatus) return;
+  if (!state.activeId) { artStatus.textContent = "Offline"; return; }
+  if (kind === "ok")   artStatus.textContent = "Na żywo";
+  else if (kind === "warn") artStatus.textContent = "Łączenie…";
+  else if (kind === "bad")  artStatus.textContent = "Błąd";
+  else artStatus.textContent = "Zatrzymane";
+}
+
+/* ══════════════════════════════════════════════════════════
+   PLAY BUTTON VISUAL
+══════════════════════════════════════════════════════════ */
+var ICON_PLAY  = '<path d="M7 5l12 7-12 7V5z"/>';
+var ICON_PAUSE = '<rect x="6" y="5" width="4.5" height="14" rx="1"/><rect x="13.5" y="5" width="4.5" height="14" rx="1"/>';
+
+function updatePlayButton(ps){
+  var playing = (ps===3||ps===6||ps===9||ps===11);
+  var paused  = (ps===2);
+
+  var btn = $("btnPlay");
+  var icon = $("btnPlayIcon");
+  btn.classList.toggle("playing", playing);
+  icon.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+  btn.title = playing ? "Pauza (spacja)" : "Graj (spacja)";
+
+  var mbp = $("mpPlay"); var mbi = $("mpPlayIcon");
+  if (mbp) {
+    mbp.classList.toggle("playing", playing);
+    if(mbi) mbi.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+  }
+
+  // Equalizer animation states
+  var npEq  = $("npEq"); if(npEq)  npEq.classList.toggle("paused", !playing);
+  var npArt = $("npArt"); if(npArt) npArt.classList.toggle("idle", !playing);
+  var mpArt = $("mpArt"); if(mpArt) mpArt.classList.toggle("paused", !playing);
+}
+
+/* ══════════════════════════════════════════════════════════
+   NOW PLAYING RENDER
+══════════════════════════════════════════════════════════ */
+function setNowPlaying(st){
+  if(!st){
+    $("npStation").innerHTML = '<span class="idle">Wybierz stację</span>';
+    $("npMeta").textContent = "—";
+    $("mpName").textContent = "Wybierz stację";
+    $("mpMeta").textContent = "—";
+    return;
+  }
+  var meta = st.genre + " · " + st.country + (st.bitrate ? " · " + st.bitrate + " kbps" : "");
+  $("npStation").textContent = st.name;
+  $("npMeta").textContent = meta;
+  $("mpName").textContent = st.name;
+  $("mpMeta").textContent = meta;
+}
+
+/* ══════════════════════════════════════════════════════════
+   LOOKUP
+══════════════════════════════════════════════════════════ */
+function getStationById(id){
+  for (var i=0;i<state.stations.length;i++)
+    if (state.stations[i].id === id) return state.stations[i];
+  return null;
+}
+function getSelectedStation(){ return state.view[state.selectedIndex] || null; }
+function getActiveStation(){ return state.activeId ? getStationById(state.activeId) : null; }
+
+/* ══════════════════════════════════════════════════════════
+   FILTERS
+══════════════════════════════════════════════════════════ */
+function fillSelect(id, fl, vals, sel){
+  var el = $(id); el.length = 0;
+  el.options[0] = new Option(fl, "");
+  vals.forEach(function(v){ el.options[el.length] = new Option(v, v); });
+  el.value = sel || "";
+}
+function renderFilterOptions(){
+  var cc=[], gc=[];
+  state.stations.forEach(function(s){ cc.push(s.country); gc.push(s.genre); });
+  fillSelect("filterCountry", "Kraj: wszystkie",    uniqSort(cc), state.filters.country);
+  fillSelect("filterGenre",   "Gatunek: wszystkie", uniqSort(gc), state.filters.genre);
+  $("sortMode").value = state.filters.sort;
+}
+function sortView(list){
+  var mode = state.filters.sort;
+  list.sort(function(a,b){
+    if (mode==="bitrate" && a.bitrate !== b.bitrate) return b.bitrate - a.bitrate;
+    if (mode==="country") {
+      var ac=lower(a.country), bc=lower(b.country);
+      if (ac<bc) return -1; if (ac>bc) return 1;
+    }
+    var an=lower(a.name), bn=lower(b.name);
+    return an<bn?-1:an>bn?1:0;
+  });
+}
+function applyFilters(){
+  var q       = lower(state.filters.q),
+      country = state.filters.country,
+      genre   = state.filters.genre,
+      onlyFav = state.filters.onlyFav,
+      out = [];
+  state.stations.forEach(function(st){
+    // Skip auto-blocked (broken) stations — except the currently active one,
+    // so it stays visible if the user just caused the error.
+    if (isBroken(st.id) && st.id !== state.activeId) return;
+    if (onlyFav && !state.favorites[st.id]) return;
+    if (country && st.country !== country)  return;
+    if (genre && st.genre !== genre)        return;
+    if (q) {
+      var h = lower(st.name + " " + st.genre + " " + st.country);
+      if (h.indexOf(q) < 0) return;
+    }
+    out.push(st);
+  });
+  sortView(out);
+  state.view = out;
+  state.selectedIndex = clamp(state.selectedIndex, 0, Math.max(0, out.length - 1));
+}
+
+/* ══════════════════════════════════════════════════════════
+   ROWS RENDER (URL hidden as requested)
+══════════════════════════════════════════════════════════ */
+var rowEls = [];
+function rowClass(idx, st){
+  var c = "row";
+  if (idx === state.selectedIndex) c += " rowSelected";
+  if (st.id === state.activeId)    c += " rowActive";
+  return c;
+}
+function updateRowClasses(){
+  for (var i=0;i<rowEls.length;i++)
+    if (rowEls[i]) rowEls[i].className = rowClass(i, state.view[i]);
+}
+
+function renderList(){
+  applyFilters();
+  var html = [], list = $("stationList"), prev = 0;
+  rowEls = [];
+  try { prev = list.scrollTop; } catch(e){}
+  $("countInfo").textContent = state.view.length + " / " + state.stations.length;
+  $("listHint").textContent  = isMobile() ? "klik = uruchom" : "dwuklik = uruchom";
+
+  if (!state.view.length) {
+    list.innerHTML =
+      '<div class="emptyState">' +
+        '<div class="emptyIcon">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
+        '</div>' +
+        'Brak stacji pasujących do filtrów' +
+      '</div>';
+    return;
+  }
+
+  state.view.forEach(function(st, i){
+    var fav    = !!state.favorites[st.id];
+    var active = (st.id === state.activeId);
+    html.push(
+      '<div class="' + rowClass(i, st) + '" data-row="1" data-index="' + i + '">' +
+        '<span class="rowStar' + (fav ? ' starFav' : '') + '" data-action="fav" title="Ulubione">' + (fav ? '★' : '☆') + '</span>' +
+        '<div class="rowInfo">' +
+          '<div class="stationName">' + safeText(st.name) + '</div>' +
+          '<div class="stationSub">' +
+            safeText(st.genre) +
+            '<span class="dot-sep">·</span>' +
+            safeText(st.country) +
+          '</div>' +
+        '</div>' +
+        '<div class="rowMeta">' +
+          (st.bitrate ? '<span class="rowKbps">' + st.bitrate + 'k</span>' : '') +
+          (active ? '<div class="miniEq' + ((audioState===3||audioState===6||audioState===11)?'':' paused') + '"><span></span><span></span><span></span></div>' : '') +
+        '</div>' +
+      '</div>'
+    );
+  });
+
+  list.innerHTML = html.join("");
+  list.scrollTop = prev;
+  list.querySelectorAll("[data-index]").forEach(function(n){
+    var idx = parseInt(n.getAttribute("data-index"), 10);
+    if (!isNaN(idx)) rowEls[idx] = n;
+  });
+  updateBrokenBadge();
+}
+
+/* ══════════════════════════════════════════════════════════
+   SELECTION
+══════════════════════════════════════════════════════════ */
+function selectIndex(idx, reveal){
+  if (!state.view.length) { state.selectedIndex = 0; return; }
+  state.selectedIndex = clamp(idx, 0, state.view.length - 1);
+  updateRowClasses();
+  if (reveal) {
+    var r = rowEls[state.selectedIndex];
+    if (r && r.scrollIntoView) r.scrollIntoView({ block: "nearest" });
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   CONNECT TIMER
+══════════════════════════════════════════════════════════ */
+function stopConnectTimer(){ clearTimeout(state.connectTimer); state.connectTimer = null; }
+function armConnectTimer(){
+  stopConnectTimer();
+  state.connectToken++;
+  var tok = state.connectToken;
+  state.connectTimer = setTimeout(function(){
+    if (tok !== state.connectToken) return;
+    if (audioState !== 3) {
+      setStatus("bad", "Nie udało się połączyć — stacja zablokowana");
+      updatePlayButton(1);
+      if (state.activeId) {
+        markStationBroken(state.activeId);
+        updateBrokenBadge();
+      }
+    }
+  }, 15000);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   PLAYBACK
+══════════════════════════════════════════════════════════ */
+function playUrl(url){
+  try {
+    var a = getPlayer(); _stopping = false; destroyHls();
+    var isHls = /\.m3u8/i.test(url);
+
+    if (isHls) {
+      if (typeof Hls !== "undefined" && Hls.isSupported()) {
+        hlsInstance = new Hls({ enableWorker: false });
+        hlsInstance.loadSource(url);
+        hlsInstance.attachMedia(a);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function(){
+          if (_stopping) return; applyVolume();
+          var p = a.play();
+          if (p && p.catch) p.catch(function(){ if (!_stopping) onPlayerError(); });
+        });
+        hlsInstance.on(Hls.Events.ERROR, function(ev, d){
+          if (d.fatal && !_stopping) onPlayerError();
+        });
+        return true;
+      } else if (a.canPlayType("application/vnd.apple.mpegurl")) {
+        a.src = url; applyVolume();
+        var p2 = a.play();
+        if (p2 && p2.catch) p2.catch(function(){ if (!_stopping) onPlayerError(); });
+        return true;
+      } else {
+        setStatus("bad", "HLS nieobsługiwany");
+        return false;
+      }
+    }
+
+    a.src = url; applyVolume();
+    var p3 = a.play();
+    if (p3 && p3.catch) p3.catch(function(){ if (!_stopping) onPlayerError(); });
+    return true;
+  } catch(e){ return false; }
+}
+
+function playStation(st){
+  if (!st) return;
+  state.activeId = st.id;
+  saveConfig();
+  setNowPlaying(st);
+  setStatus("warn", "Łączenie…");
+  updatePlayButton(6);
+
+  if (!playUrl(st.url)) {
+    setStatus("bad", "Nie udało się uruchomić");
+    return;
+  }
+  armConnectTimer();
+  updateRowClasses();
+  renderList(); // refresh to show equalizer on the active row
+}
+
+function playSelected(){ var st = getSelectedStation(); if (st) playStation(st); }
+
+function togglePlayPause(){
+  if (!state.activeId) { playSelected(); return; }
+  var a = getPlayer();
+
+  if (audioState===3 || audioState===6 || audioState===9 || audioState===11) {
+    _stopping = false; a.pause(); return;
+  }
+
+  var st = getActiveStation();
+  if (!st) { playSelected(); return; }
+
+  _stopping = false;
+  if (a.src !== st.url) a.src = st.url;
+  applyVolume();
+  var p = a.play();
+  if (p && p.catch) p.catch(function(){ onPlayerError(); });
+}
+
+function stopPlayback(){
+  stopConnectTimer();
+  _stopping = true;
+  destroyHls();
+  try {
+    var a = getPlayer();
+    a.pause(); a.removeAttribute("src"); a.load();
+  } catch(e){}
+  audioState = 1; _stopping = false;
+  setStatus("", "Zatrzymane");
+  updatePlayButton(1);
+}
+
+function nextPrev(dir){
+  if (!state.view.length) return;
+  var idx = state.selectedIndex + dir;
+  if (idx < 0) idx = state.view.length - 1;
+  if (idx >= state.view.length) idx = 0;
+  state.selectedIndex = idx;
+  updateRowClasses();
+  var r = rowEls[state.selectedIndex];
+  if (r && r.scrollIntoView) r.scrollIntoView({ block: "nearest" });
+  playSelected();
+}
+
+function toggleFavorite(id){
+  if (!id) return;
+  if (state.favorites[id]) delete state.favorites[id];
+  else state.favorites[id] = 1;
+  saveConfig();
+  renderList();
+}
+
+function clearFilters(){
+  state.filters.q = state.filters.country = state.filters.genre = "";
+  state.filters.onlyFav = false;
+  $("search").value = "";
+  $("filterCountry").value = "";
+  $("filterGenre").value = "";
+  $("onlyFav").checked = false;
+  $("onlyFavChip").classList.remove("active");
+  state.selectedIndex = 0;
+  renderList();
+}
+
+/* ══════════════════════════════════════════════════════════
+   PLAYER EVENTS
+══════════════════════════════════════════════════════════ */
+function onPlayStateChange(ns){
+  stopConnectTimer();
+  if (ns === 3)       setStatus("ok", "Na żywo");
+  else if (ns === 2)  setStatus("warn", "Wstrzymano");
+  else if (ns === 6 || ns === 11) { setStatus("warn", "Buforowanie…"); armConnectTimer(); }
+  else if (ns === 1)  setStatus("", "Zatrzymane");
+  updatePlayButton(ns);
+  renderList();
+}
+function onPlayerError(){
+  stopConnectTimer();
+  setStatus("bad", "Stream niedostępny — stacja zablokowana");
+  updatePlayButton(1);
+  if (state.activeId) {
+    markStationBroken(state.activeId);
+    updateBrokenBadge();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ROW CLICK RESOLUTION
+══════════════════════════════════════════════════════════ */
+function resolveRow(target){
+  var list = $("stationList"), el = target;
+  while (el && el !== list) {
+    if (el.getAttribute && el.getAttribute("data-row") === "1") return el;
+    el = el.parentNode;
+  }
+  return null;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BINDINGS
+══════════════════════════════════════════════════════════ */
+function bindUi(){
+  var _st = null;
+  bind($("search"), "input", function(){
+    clearTimeout(_st);
+    _st = setTimeout(function(){
+      state.filters.q = $("search").value || "";
+      state.selectedIndex = 0;
+      renderList();
+    }, 180);
+  });
+  bind($("filterCountry"), "change", function(){ state.filters.country = $("filterCountry").value || ""; state.selectedIndex=0; renderList(); });
+  bind($("filterGenre"),   "change", function(){ state.filters.genre   = $("filterGenre").value   || ""; state.selectedIndex=0; renderList(); });
+  bind($("sortMode"),      "change", function(){ state.filters.sort    = $("sortMode").value      || "name"; saveConfig(); renderList(); });
+
+  bind($("onlyFav"), "change", function(){
+    state.filters.onlyFav = $("onlyFav").checked;
+    $("onlyFavChip").classList.toggle("active", state.filters.onlyFav);
+    state.selectedIndex = 0;
+    renderList();
+  });
+
+  bind($("btnClear"),        "click", clearFilters);
+  bind($("btnPlay"),         "click", togglePlayPause);
+  bind($("btnStop"),         "click", stopPlayback);
+  bind($("btnPrev"),         "click", function(){ nextPrev(-1); });
+  bind($("btnNext"),         "click", function(){ nextPrev(1);  });
+  bind($("btnUnblock"),      "click", function(){
+    var n = brokenCount();
+    if (n === 0) { setStatus("ok", "Brak zablokowanych stacji"); return; }
+    clearBrokenStations();
+  });
+  bind($("btnResetStorage"), "click", function(){
+    if (!window.confirm("Zresetować wszystkie ustawienia (ulubione, głośność, ostatnią stację, listę zablokowanych)?")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    state.favorites = {};
+    state.brokenStations = {};
+    setVolume(65);
+    renderList();
+    updateBrokenBadge();
+    setStatus("ok", "Ustawienia zresetowane");
+  });
+
+  bind($("volSlider"), "input", function(){ setVolume(+$("volSlider").value); });
+
+  bind($("mpPlay"), "click", togglePlayPause);
+  bind($("mpPrev"), "click", function(){ nextPrev(-1); });
+  bind($("mpNext"), "click", function(){ nextPrev(1);  });
+
+  bind($("stationList"), "click", function(e){
+    var t = e.target, row = resolveRow(t), idx;
+    if (!row) return;
+    idx = parseInt(row.getAttribute("data-index"), 10);
+    if (isNaN(idx) || !state.view[idx]) return;
+    if (t && t.getAttribute && t.getAttribute("data-action") === "fav") {
+      toggleFavorite(state.view[idx].id);
+      return stopEvt(e);
+    }
+    state.selectedIndex = idx;
+    updateRowClasses();
+    if (isMobile()) playSelected();
+  });
+  bind($("stationList"), "dblclick", function(e){
+    if (isMobile()) return;
+    var t = e.target, row = resolveRow(t), idx;
+    if (!row) return;
+    idx = parseInt(row.getAttribute("data-index"), 10);
+    if (isNaN(idx) || !state.view[idx]) return;
+    if (t && t.getAttribute && t.getAttribute("data-action") === "fav") return stopEvt(e);
+    state.selectedIndex = idx;
+    updateRowClasses();
+    playSelected();
+    return stopEvt(e);
+  });
+
+  bind(document, "keydown", function(e){
+    var key = e.keyCode || 0, src = e.target;
+    var tag = src && src.tagName ? src.tagName.toLowerCase() : "";
+    var typing = (tag === "input" || tag === "textarea" || tag === "select");
+    var st;
+    if (typing) { if (key === 27) { src.blur(); return stopEvt(e); } return; }
+    if (key === 32) { togglePlayPause(); return stopEvt(e); }
+    if (key === 13) { playSelected();    return stopEvt(e); }
+    if (key === 83) { $("search").focus(); return stopEvt(e); }
+    if (key === 38) { selectIndex(state.selectedIndex - 1, true); return stopEvt(e); }
+    if (key === 40) { selectIndex(state.selectedIndex + 1, true); return stopEvt(e); }
+    if (key === 37) { nextPrev(-1); return stopEvt(e); }
+    if (key === 39) { nextPrev(1);  return stopEvt(e); }
+    if (key === 70) { st = getSelectedStation(); if (st) toggleFavorite(st.id); }
+    if (key === 27) { clearFilters(); return stopEvt(e); }
+  });
+
+  var _rt = null;
+  window.addEventListener("resize", function(){ clearTimeout(_rt); _rt = setTimeout(renderList, 200); });
+}
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+window.addEventListener("DOMContentLoaded", async function(){
+  loadConfig();
+  renderFilterOptions();
+  $("onlyFav").checked = !!state.filters.onlyFav;
+  $("onlyFavChip").classList.toggle("active", state.filters.onlyFav);
+  getPlayer();
+  setVolume(state.volume);
+  updatePlayButton(1);
+  bindUi();
+
+  $("stationList").innerHTML =
+    '<div class="loadingState"><span class="loadingPulse"></span>Ładowanie stacji z Radio Browser API…</div>';
+  setStatus("warn", "Ładowanie stacji…");
+
+  state.stations = await loadAllStations();
+
+  if (!state.stations.length) {
+    // API failure — no fallback anymore
+    $("stationList").innerHTML =
+      '<div class="emptyState">' +
+        '<div class="emptyIcon">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3v10M12 17v.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
+        '</div>' +
+        '<strong style="color:var(--ink-2);">Nie udało się pobrać listy stacji</strong><br/>' +
+        '<span style="font-size:12px;">Radio Browser API nie odpowiada. Sprawdź połączenie i odśwież stronę.</span>' +
+      '</div>';
+    setStatus("bad", "Brak połączenia z API");
+    updateBrokenBadge();
+    return;
+  }
+
+  if (state.activeId) {
+    var st = getStationById(state.activeId);
+    setNowPlaying(st || null);
+    if (st) {
+      renderList();
+      for (var i = 0; i < state.view.length; i++) {
+        if (state.view[i] && state.view[i].id === state.activeId) { state.selectedIndex = i; break; }
+      }
+    }
+  } else {
+    setNowPlaying(null);
+  }
+
+  renderFilterOptions();
+  renderList();
+  updateBrokenBadge();
+  var blocked = brokenCount();
+  var msg = state.stations.length + " stacji gotowych";
+  if (blocked > 0) msg += " · " + blocked + " ukryte (błędy)";
+  setStatus("", msg);
+});
+</script>
+</body>
+</html>
