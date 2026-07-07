@@ -346,9 +346,7 @@ function loadConfig(){
     if(cfg.activeId)         state.activeId = "" + cfg.activeId;
     if(cfg.favorites)        state.favorites = cfg.favorites;
     if(cfg.sort)             state.filters.sort = "" + cfg.sort;
-    if(cfg.brokenStations)   state.brokenStations = cfg.brokenStations;
   } catch(e){}
-  pruneBrokenStations();
 }
 var _saveT = null;
 function debouncedSave(){ clearTimeout(_saveT); _saveT = setTimeout(saveConfig, 600); }
@@ -359,98 +357,30 @@ function saveConfig(){
       volume: state.volume,
       activeId: state.activeId,
       favorites: state.favorites,
-      sort: state.filters.sort,
-      brokenStations: state.brokenStations
+      sort: state.filters.sort
     }));
   } catch(e){}
 }
 
 /* ══════════════════════════════════════════════════════════
-   ZEPSUTE STACJE — auto-ukrywanie
+   AUTO-BLOKOWANIE STACJI — USUNIĘTE
+   Stacje pochodzą z Radio Browser API filtrowanego po
+   lastcheckok=1 & hidebroken=true (serwer sam sprawdza, czy grają)
+   oraz z listy kuratorowanej (zweryfikowane, stabilne streamy).
+   Aplikacja niczego nie ukrywa ani nie blokuje — gdy stream chwilowo
+   nie odpowiada, pokazuje jedynie status błędu, a stacja zostaje na
+   liście. Poniżej bezpieczne zaślepki dla zgodności wywołań.
 ══════════════════════════════════════════════════════════ */
-function pruneBrokenStations(){
-  var now = Date.now(), changed = false;
-  for (var id in state.brokenStations){
-    if (!state.brokenStations.hasOwnProperty(id)) continue;
-    var ts = +state.brokenStations[id] || 0;
-    if (now - ts > BROKEN_EXPIRY_MS) {
-      delete state.brokenStations[id];
-      changed = true;
-    }
-  }
-  if (changed) saveConfig();
-}
-
-function isBroken(id){
-  if (!id || !state.brokenStations[id]) return false;
-  var ts = +state.brokenStations[id] || 0;
-  if (Date.now() - ts > BROKEN_EXPIRY_MS) {
-    delete state.brokenStations[id];
-    return false;
-  }
-  return true;
-}
-
-function markStationBroken(id){
-  if (!id) return;
-  state.brokenStations[id] = Date.now();
-  saveConfig();
-}
-
-function cancelPendingBroken(){
-  if (state.pendingBrokenTimer) {
-    clearTimeout(state.pendingBrokenTimer);
-    state.pendingBrokenTimer = null;
-  }
-  state.pendingBrokenId = null;
-}
-
-/* Zaplanuj oznaczenie stacji jako zepsutej, chyba że "wyzdrowieje"
-   w okresie karencji. */
-function schedulePendingBroken(stationId){
-  if (!stationId) return;
-  cancelPendingBroken();
-  state.pendingBrokenId = stationId;
-  state.pendingBrokenTimer = setTimeout(function(){
-    if (state.pendingBrokenId === stationId &&
-        state.activeId === stationId &&
-        audioState !== 3) {
-      markStationBroken(stationId);
-      updateBrokenBadge();
-      renderList();
-    }
-    state.pendingBrokenTimer = null;
-    state.pendingBrokenId = null;
-  }, BROKEN_GRACE_MS);
-}
-
-function brokenCount(){
-  pruneBrokenStations();
-  var n = 0;
-  for (var k in state.brokenStations) {
-    if (state.brokenStations.hasOwnProperty(k)) n++;
-  }
-  return n;
-}
-
-function clearBrokenStations(){
-  state.brokenStations = {};
-  saveConfig();
-  renderList();
-  updateBrokenBadge();
-  setStatus("ok", "Lista zablokowanych wyczyszczona");
-}
-
+function pruneBrokenStations(){}
+function isBroken(id){ return false; }
+function markStationBroken(id){}
+function cancelPendingBroken(){}
+function schedulePendingBroken(stationId){}
+function brokenCount(){ return 0; }
+function clearBrokenStations(){}
 function updateBrokenBadge(){
-  var n = brokenCount();
   var el = $("brokenBadge");
-  if (!el) return;
-  if (n > 0) {
-    el.style.display = "inline-flex";
-    el.textContent = n + " zablokowana" + (n === 1 ? "" : (n < 5 ? "e" : "ych"));
-  } else {
-    el.style.display = "none";
-  }
+  if (el) el.style.display = "none";
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -686,7 +616,6 @@ function applyFilters(){
       onlyPL  = state.filters.onlyPL,
       out = [];
   state.stations.forEach(function(st){
-    if (isBroken(st.id) && st.id !== state.activeId) return;
     if (onlyFav && !state.favorites[st.id]) return;
     if (onlyClub && !st.club)               return;
     if (onlyPL && st.country !== "PL")      return;
@@ -1096,12 +1025,10 @@ function adoptStations(stations){
 }
 
 function summarizeStatus(prefix){
-  var blocked = brokenCount();
   var clubCount = 0, ccs = {};
   state.stations.forEach(function(s){ if (s.club) clubCount++; ccs[s.country] = 1; });
   var msg = nfmt(state.stations.length) + " stacji · " + nfmt(Object.keys(ccs).length) + " krajów";
   if (clubCount > 0) msg += " · " + nfmt(clubCount) + " klubowych";
-  if (blocked > 0)   msg += " · " + blocked + " ukryte";
   if (prefix) msg = prefix + " · " + msg;
   setStatus("", msg);
 }
@@ -1159,19 +1086,12 @@ function bindUi(){
   bind($("btnPrev"),    "click", function(){ nextPrev(-1); });
   bind($("btnNext"),    "click", function(){ nextPrev(1);  });
   bind($("btnRefresh"), "click", function(){ refreshStations(true); });
-  bind($("btnUnblock"), "click", function(){
-    var n = brokenCount();
-    if (n === 0) { setStatus("ok", "Brak zablokowanych stacji"); return; }
-    clearBrokenStations();
-  });
   bind($("btnResetStorage"), "click", function(){
-    if (!window.confirm("Zresetować wszystkie ustawienia (ulubione, głośność, ostatnią stację, listę zablokowanych)?")) return;
+    if (!window.confirm("Zresetować wszystkie ustawienia (ulubione, głośność, ostatnią stację)?")) return;
     try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
     state.favorites = {};
-    state.brokenStations = {};
     setVolume(65);
     renderList();
-    updateBrokenBadge();
     setStatus("ok", "Ustawienia zresetowane");
   });
 
@@ -1348,6 +1268,26 @@ window.addEventListener("DOMContentLoaded", async function(){
     applyThemeEffects(name);
   }
 
+  function prefersReduced() {
+    try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
+    catch (e) { return false; }
+  }
+
+  /* Płynne przejście między motywami — View Transitions API (Chrome).
+     Bez wsparcia lub przy reduce-motion: natychmiast. */
+  function switchTheme(name) {
+    if (document.startViewTransition && !prefersReduced()) {
+      document.documentElement.classList.add("theme-anim");
+      var vt = document.startViewTransition(function () { applyTheme(name); });
+      if (vt && vt.finished && vt.finished.then) {
+        vt.finished.then(function () { document.documentElement.classList.remove("theme-anim"); },
+                         function () { document.documentElement.classList.remove("theme-anim"); });
+      }
+    } else {
+      applyTheme(name);
+    }
+  }
+
   /* zastosuj zapisany motyw natychmiast (skrypt `defer` — DOM gotowy).
      Migracja ze starego localStorage („dark" = bursztyn). */
   var saved = getCookie(THEME_COOKIE);
@@ -1390,9 +1330,9 @@ window.addEventListener("DOMContentLoaded", async function(){
       while (b && b !== menu && !(b.getAttribute && b.getAttribute("data-theme-val"))) b = b.parentNode;
       if (b && b.getAttribute && b.getAttribute("data-theme-val")) {
         var t = b.getAttribute("data-theme-val");
-        applyTheme(t);
         setCookie(THEME_COOKIE, t, 365);
         openMenu(false);
+        switchTheme(t);
       }
     });
     bind(document, "click", function (e) {

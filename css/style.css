@@ -562,6 +562,32 @@ input{ caret-color:var(--accent); }
 @media (max-width:560px){ #listHint{ display:none; } }
 @media (max-width:420px){ .brandTitle{ font-size:21px; } .npStation{ font-size:21px; } .rowKbps{ display:none; } }
 
+/* ── 9b. PŁYNNE PRZEJŚCIE MIĘDZY MOTYWAMI (View Transitions) ─ */
+::view-transition-old(root),
+::view-transition-new(root){
+  animation-duration:.55s;
+  animation-timing-function:cubic-bezier(.4,0,.2,1);
+  mix-blend-mode:normal;
+}
+/* stary widok znika, nowy delikatnie się wyłania */
+::view-transition-old(root){ animation-name:themeFadeOut; }
+::view-transition-new(root){ animation-name:themeFadeIn; }
+@keyframes themeFadeOut{ from{ opacity:1; } to{ opacity:0; } }
+@keyframes themeFadeIn{ from{ opacity:0; transform:scale(1.015); } to{ opacity:1; transform:none; } }
+
+/* miękkie przejście kolorów paneli/tekstu w trakcie zmiany (fallback + dopełnienie) */
+.theme-anim #header, .theme-anim #filterRail, .theme-anim #playerBar,
+.theme-anim .panelBlock, .theme-anim #stationList, .theme-anim .row,
+.theme-anim .brandMark, .theme-anim .select, .theme-anim .railChip, .theme-anim .railBtn{
+  transition:background-color var(--dur-s) var(--ease), color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease);
+}
+
+@media (prefers-reduced-motion:reduce){
+  ::view-transition-group(*),
+  ::view-transition-old(root),
+  ::view-transition-new(root){ animation:none!important; }
+}
+
 /* ── 10. prefers-reduced-motion ───────────────────────────── */
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{ animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; scroll-behavior:auto!important; }
