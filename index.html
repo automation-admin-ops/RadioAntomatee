@@ -38,7 +38,7 @@
 
 <div id="shell">
 
-  <!-- HEADER -->
+  <!-- ══ TOP BAR: marka · wyszukiwarka · motyw ══ -->
   <header id="header">
     <div class="brandGroup">
       <div class="brandMark">
@@ -61,6 +61,17 @@
       </div>
     </div>
 
+    <div class="headSearch">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <input id="search" type="text" placeholder="Szukaj stacji, gatunku, kraju…" autocomplete="off" />
+      <button class="railBtn ghost" id="btnFiltersMobile" type="button" aria-label="Filtry" title="Filtry">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
     <div class="toolbar">
       <div class="themeWrap">
         <button class="themeBtn" id="btnTheme" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu" aria-label="Wybierz motyw" title="Wybierz motyw">
@@ -79,7 +90,7 @@
           <button class="themeOpt" data-theme-val="amber"     role="menuitemradio"><span class="tsw" style="--sw:#ffb000">🍯</span>Bursztyn<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="cyan"      role="menuitemradio"><span class="tsw" style="--sw:#22d3ee">❄️</span>Lód<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="synthwave" role="menuitemradio"><span class="tsw" style="--sw:#ff3ca6">🌆</span>Synthwave<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="crimson"   role="menuitemradio"><span class="tsw" style="--sw:#ff4d4d">🩸</span>Krwista<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="crimson"   role="menuitemradio"><span class="tsw" style="--sw:#e11d1d">🩸</span>Krwista<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="violet"    role="menuitemradio"><span class="tsw" style="--sw:#a970ff">🔮</span>Fiolet<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="cats"      role="menuitemradio"><span class="tsw" style="--sw:#ff9a52">🐱</span>Koty<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="naruto"    role="menuitemradio"><span class="tsw" style="--sw:#ff7a18">🍥</span>Naruto<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
@@ -88,92 +99,75 @@
     </div>
   </header>
 
-  <!-- MAIN -->
-  <main id="main">
-    <section id="leftPanel">
+  <!-- ══ GŁÓWNY UKŁAD: rail filtrów · siatka kart · teraz gra ══ -->
+  <div id="main">
 
-      <!-- WYSZUKIWARKA + FILTRY -->
-      <div id="filterSection">
-        <div class="searchField">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
-            <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-          <input id="search" type="text" placeholder="Szukaj stacji, gatunku, kraju…" autocomplete="off" />
-          <button class="filterToggle" id="btnFilters" type="button" aria-expanded="false" aria-controls="filterPanel" title="Pokaż / ukryj filtry">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
-            Filtry
-            <span class="filterBadge" id="filterBadge" hidden>0</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-
-        <div class="filterPanel" id="filterPanel">
-          <div class="filterPanel__inner">
-            <div class="filterPanel__card">
-              <div class="filterRow">
-                <select class="select" id="filterCountry" aria-label="Kraj"></select>
-                <select class="select" id="filterGenre" aria-label="Gatunek"></select>
-                <select class="select" id="sortMode" aria-label="Sortowanie">
-                  <optgroup label="Nazwa">
-                    <option value="name">A &#8594; Z</option>
-                    <option value="name-desc">Z &#8594; A</option>
-                  </optgroup>
-                  <optgroup label="Kraj">
-                    <option value="country">Kraj A &#8594; Z</option>
-                    <option value="country-desc">Kraj Z &#8594; A</option>
-                  </optgroup>
-                  <optgroup label="Jako&#347;&#263; / gatunek">
-                    <option value="genre">Gatunek</option>
-                    <option value="bitrate">Bitrate &#8595;</option>
-                    <option value="bitrate-asc">Bitrate &#8593;</option>
-                  </optgroup>
-                  <optgroup label="Inne">
-                    <option value="fav">Ulubione naprz&#243;d</option>
-                    <option value="hit">HIT naprz&#243;d</option>
-                  </optgroup>
-                </select>
-                <label class="chipBtn" id="onlyPLChip" title="Tylko polskie stacje">
-                  <input type="checkbox" id="onlyPL" />
-                  Polskie
-                </label>
-                <label class="chipBtn" id="onlyClubChip" title="Klubowe / dance / rave / hardstyle / techno">
-                  <input type="checkbox" id="onlyClub" />
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/>
-                    <circle cx="12" cy="12" r="2.6" fill="currentColor"/>
-                    <path d="M12 6.5a5.5 5.5 0 0 1 5.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".55"/>
-                  </svg>
-                  Klubowe
-                </label>
-                <label class="chipBtn" id="onlyFavChip">
-                  <input type="checkbox" id="onlyFav" />
-                  <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2.5l2.9 6.3 6.9.7-5.2 4.7 1.5 6.8L12 17.7 5.9 21l1.5-6.8L2.2 9.5l6.9-.7L12 2.5z"/>
-                  </svg>
-                  Ulubione
-                </label>
-              </div>
-              <div class="toolRow">
-                <button class="chipBtn" id="btnClear" type="button">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                  Wyczy&#347;&#263; filtry
-                </button>
-                <button class="chipBtn" id="btnRefresh" type="button" title="Pobierz &#347;wie&#380;&#261; list&#281; stacji z API">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Od&#347;wie&#380;
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+    <!-- LEWY PANEL: FILTRY -->
+    <aside id="filterRail">
+      <div class="railHead">
+        <span class="railTitle">Filtry</span>
+        <span class="filterBadge" id="filterBadge" hidden>0</span>
       </div>
 
+      <div class="railSection">
+        <div class="railLabel">Szybkie</div>
+        <label class="railChip" id="onlyPLChip" title="Tylko polskie stacje">
+          <input type="checkbox" id="onlyPL" />
+          <span class="railChipIco">🇵🇱</span> Polskie
+        </label>
+        <label class="railChip" id="onlyClubChip" title="Klubowe / dance / rave / hardstyle / techno">
+          <input type="checkbox" id="onlyClub" />
+          <span class="railChipIco">🎧</span> Klubowe
+        </label>
+        <label class="railChip" id="onlyFavChip" title="Tylko ulubione">
+          <input type="checkbox" id="onlyFav" />
+          <span class="railChipIco">★</span> Ulubione
+        </label>
+      </div>
+
+      <div class="railSection">
+        <div class="railLabel">Filtruj</div>
+        <select class="select" id="filterCountry" aria-label="Kraj"></select>
+        <select class="select" id="filterGenre" aria-label="Gatunek"></select>
+        <select class="select" id="sortMode" aria-label="Sortowanie">
+          <optgroup label="Nazwa">
+            <option value="name">A &#8594; Z</option>
+            <option value="name-desc">Z &#8594; A</option>
+          </optgroup>
+          <optgroup label="Kraj">
+            <option value="country">Kraj A &#8594; Z</option>
+            <option value="country-desc">Kraj Z &#8594; A</option>
+          </optgroup>
+          <optgroup label="Jako&#347;&#263; / gatunek">
+            <option value="genre">Gatunek</option>
+            <option value="bitrate">Bitrate &#8595;</option>
+            <option value="bitrate-asc">Bitrate &#8593;</option>
+          </optgroup>
+          <optgroup label="Inne">
+            <option value="fav">Ulubione naprz&#243;d</option>
+            <option value="hit">HIT naprz&#243;d</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="railSection railTools">
+        <button class="railBtn" id="btnClear" type="button">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Wyczy&#347;&#263;
+        </button>
+        <button class="railBtn" id="btnRefresh" type="button" title="Pobierz &#347;wie&#380;&#261; list&#281; stacji z API">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Od&#347;wie&#380;
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTRUM: SIATKA STACJI -->
+    <section id="centerCol">
       <div id="listHead">
         <span>Stacje · <span id="countInfo">0 / 0</span><span id="brokenBadge" class="brokenBadge" style="display:none;"></span></span>
         <span id="listHint">dwuklik = uruchom</span>
       </div>
-
       <div id="stationList" tabindex="0"></div>
     </section>
 
@@ -198,37 +192,18 @@
       <div class="panelBlock kbdBlock">
         <div class="panelTitle">Skróty klawiaturowe</div>
         <div class="kbdList">
-          <div class="kbdRow">
-            <span class="kbdLabel">Wybór stacji</span>
-            <span class="kbdKeys"><span class="kbdKey">↑</span><span class="kbdKey">↓</span></span>
-          </div>
-          <div class="kbdRow">
-            <span class="kbdLabel">Uruchom wybraną</span>
-            <span class="kbdKeys"><span class="kbdKey">Enter</span></span>
-          </div>
-          <div class="kbdRow">
-            <span class="kbdLabel">Graj / Pauza</span>
-            <span class="kbdKeys"><span class="kbdKey">Spacja</span></span>
-          </div>
-          <div class="kbdRow">
-            <span class="kbdLabel">Poprzednia / następna</span>
-            <span class="kbdKeys"><span class="kbdKey">←</span><span class="kbdKey">→</span></span>
-          </div>
-          <div class="kbdRow">
-            <span class="kbdLabel">Ulubione</span>
-            <span class="kbdKeys"><span class="kbdKey">F</span></span>
-          </div>
-          <div class="kbdRow">
-            <span class="kbdLabel">Wycisz</span>
-            <span class="kbdKeys"><span class="kbdKey">M</span></span>
-          </div>
+          <div class="kbdRow"><span class="kbdLabel">Wybór stacji</span><span class="kbdKeys"><span class="kbdKey">↑</span><span class="kbdKey">↓</span></span></div>
+          <div class="kbdRow"><span class="kbdLabel">Uruchom wybraną</span><span class="kbdKeys"><span class="kbdKey">Enter</span></span></div>
+          <div class="kbdRow"><span class="kbdLabel">Graj / Pauza</span><span class="kbdKeys"><span class="kbdKey">Spacja</span></span></div>
+          <div class="kbdRow"><span class="kbdLabel">Poprzednia / następna</span><span class="kbdKeys"><span class="kbdKey">←</span><span class="kbdKey">→</span></span></div>
+          <div class="kbdRow"><span class="kbdLabel">Ulubione / Wycisz</span><span class="kbdKeys"><span class="kbdKey">F</span><span class="kbdKey">M</span></span></div>
         </div>
       </div>
     </aside>
-  </main>
+  </div>
 </div>
 
-<!-- DOLNY PASEK ODTWARZACZA (desktop + mobile) -->
+<!-- ══ DOLNY PASEK ODTWARZACZA (desktop + mobile) ══ -->
 <div id="playerBar">
   <div class="pbInner">
     <div class="pbNow">

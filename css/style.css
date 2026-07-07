@@ -50,37 +50,46 @@
   --mono:"Share Tech Mono", ui-monospace, monospace;    /* odczyty */
 }
 
-/* ——— AMBER (bursztyn) ——— */
+/* ——— AMBER (bursztyn) — motyw JASNY (miód/krem) ——— */
 :root[data-theme="amber"]{
-  --bg:#0a0500; --bg-tint:#140a00; --paper:#1d1305; --paper-2:#2a1c07;
-  --ink:#ffc24d; --ink-2:#d99a2e; --muted:#a8741f; --muted-2:#6e4c14;
-  --accent:#ffb000; --accent-deep:#d99100; --accent-amber:#ffd27a;
-  --on-accent:#1a0f00; --star:#ffd27a;
-  --chrome-1:#20150a; --chrome-2:#100a02;
-  --chrome-ink:#ffc66b; --chrome-soft:#d99a2e; --chrome-mut:#a8741f;
-  --globe-rgb:255,176,0; --globe-core:#fff0d0; --rain:#ffb000; --rain-op:.45;
+  --bg:#fff8ec; --bg-tint:#fff0d8; --paper:#ffffff; --paper-2:#fff6e6;
+  --ink:#6b4a10; --ink-2:#8a6015; --muted:#a9822f; --muted-2:#c2a566;
+  --accent:#e8930c; --accent-deep:#c2760a; --accent-amber:#ffbe4d;
+  --on-accent:#3a2400; --star:#e8930c;
+  --chrome-1:#fff0d6; --chrome-2:#ffe7bf;
+  --chrome-ink:#5a3d0a; --chrome-soft:#8a5f12; --chrome-mut:#b0862f;
+  --globe-rgb:232,147,12; --globe-core:#5a3d0a;
+  --globe-bg:radial-gradient(135% 135% at 50% 12%, #fff8ea 0%, #ffefcf 46%, #ffe4b0 100%);
+  --globe-bg-shade:rgba(180,120,20,.16);
+  --rain:#e8930c; --rain-op:1; --rain-bg:transparent; --crt-op:0;
 }
 
-/* ——— CYAN (lód) ——— */
+/* ——— CYAN (lód) — motyw JASNY (mroźny błękit) ——— */
 :root[data-theme="cyan"]{
-  --bg:#00080d; --bg-tint:#001420; --paper:#05202b; --paper-2:#0a2f3d;
-  --ink:#7be8f7; --ink-2:#3fc9de; --muted:#2497ad; --muted-2:#176b7c;
-  --accent:#22d3ee; --accent-deep:#0ea5c4; --accent-amber:#a5f3fc;
-  --on-accent:#04222a; --star:#a5f3fc;
-  --chrome-1:#082430; --chrome-2:#02121a;
-  --chrome-ink:#8be9f7; --chrome-soft:#3fc9de; --chrome-mut:#2497ad;
-  --globe-rgb:34,211,238; --globe-core:#d6f7ff; --rain:#22d3ee; --rain-op:.55; --crt-op:.5;
+  --bg:#eef9fd; --bg-tint:#dcf1f8; --paper:#ffffff; --paper-2:#effafd;
+  --ink:#0d4a5c; --ink-2:#12657c; --muted:#3d8ea3; --muted-2:#78b3c2;
+  --accent:#0aa5c4; --accent-deep:#0883a0; --accent-amber:#6fd6ea;
+  --on-accent:#eafaff; --star:#0aa5c4;
+  --chrome-1:#dff3f9; --chrome-2:#cceaf2;
+  --chrome-ink:#0d4a5c; --chrome-soft:#1a748c; --chrome-mut:#4a95a8;
+  --globe-rgb:14,165,196; --globe-core:#0d4a5c;
+  --globe-bg:radial-gradient(135% 135% at 50% 12%, #f4fcff 0%, #e2f4fa 46%, #cdebf3 100%);
+  --globe-bg-shade:rgba(20,120,150,.16);
+  --rain:#28aecb; --rain-op:1; --rain-bg:transparent; --crt-op:0;
 }
 
-/* ——— SYNTHWAVE (magenta) ——— */
+/* ——— SYNTHWAVE (magenta) — motyw JASNY (pastelowy vaporwave) ——— */
 :root[data-theme="synthwave"]{
-  --bg:#0c0316; --bg-tint:#16062a; --paper:#1e0930; --paper-2:#2c1044;
-  --ink:#ff8fce; --ink-2:#f25aa8; --muted:#c23e86; --muted-2:#8a2a5f;
-  --accent:#ff3ca6; --accent-deep:#d61e84; --accent-amber:#ff9dd0;
-  --on-accent:#2a0418; --star:#ff9dd0;
-  --chrome-1:#240a34; --chrome-2:#12041e;
-  --chrome-ink:#ff9dd0; --chrome-soft:#f25aa8; --chrome-mut:#c23e86;
-  --globe-rgb:255,60,166; --globe-core:#ffd9ee; --rain:#ff3ca6; --rain-op:.9; --crt-op:.45;
+  --bg:#fdeef8; --bg-tint:#fbe0f2; --paper:#ffffff; --paper-2:#fdeef9;
+  --ink:#8a1560; --ink-2:#b01f7c; --muted:#c85a9a; --muted-2:#dd94bf;
+  --accent:#e01f8a; --accent-deep:#c01576; --accent-amber:#ff7ac2;
+  --on-accent:#fff0f8; --star:#e01f8a;
+  --chrome-1:#fbe2f2; --chrome-2:#f6d2e9;
+  --chrome-ink:#8a1560; --chrome-soft:#b52e86; --chrome-mut:#7a5bd0;
+  --globe-rgb:224,31,138; --globe-core:#8a1560; --globe-rgb2:20,180,220;
+  --globe-bg:radial-gradient(135% 135% at 50% 12%, #fef2fb 0%, #fbe0f4 46%, #f6cfec 100%);
+  --globe-bg-shade:rgba(180,30,120,.16);
+  --rain:#e01f8a; --rain-op:1; --rain-bg:transparent; --crt-op:0;
 }
 
 /* ——— CRIMSON (czerwień) — motyw JASNY ——— */
@@ -117,26 +126,32 @@
   --globe-rgb:169,112,255; --globe-core:#e6d9ff; --rain:#a970ff; --rain-op:.85; --crt-op:.6;
 }
 
-/* ——— KOTY 🐱 (ciepła paleta, w tle padają kotki) ——— */
+/* ——— KOTY 🐱 — motyw JASNY (przytulny, w tle padają kotki) ——— */
 :root[data-theme="cats"]{
-  --bg:#160a06; --bg-tint:#241009; --paper:#2a140c; --paper-2:#3a1e13;
-  --ink:#ffcfa8; --ink-2:#f2a878; --muted:#cf855a; --muted-2:#9a5c38;
-  --accent:#ff9a52; --accent-deep:#e57a34; --accent-amber:#ffd0a8;
-  --on-accent:#2a1204; --star:#ffd9b8;
-  --chrome-1:#301609; --chrome-2:#1a0c05;
-  --chrome-ink:#ffd0a8; --chrome-soft:#f2a878; --chrome-mut:#cf855a;
-  --globe-rgb:255,154,82; --globe-core:#fff0e0; --rain:#ffb06a; --rain-op:1; --crt-op:.3;
+  --bg:#fff4ec; --bg-tint:#ffe9db; --paper:#ffffff; --paper-2:#fff3ea;
+  --ink:#7a3f1a; --ink-2:#9a5626; --muted:#b57a4c; --muted-2:#cfa483;
+  --accent:#f07a2e; --accent-deep:#d5611a; --accent-amber:#ffb075;
+  --on-accent:#fff2e8; --star:#f07a2e;
+  --chrome-1:#ffe9d8; --chrome-2:#ffddc4;
+  --chrome-ink:#7a3f1a; --chrome-soft:#a85d2a; --chrome-mut:#c08050;
+  --globe-rgb:240,122,46; --globe-core:#7a3f1a;
+  --globe-bg:radial-gradient(135% 135% at 50% 12%, #fff6ee 0%, #ffe9d8 46%, #ffdcc2 100%);
+  --globe-bg-shade:rgba(190,110,50,.15);
+  --rain:#f07a2e; --rain-op:1; --rain-bg:transparent; --crt-op:0;
 }
 
-/* ——— NARUTO 🍥 (pomarańcz ninja + znaki kana) ——— */
+/* ——— NARUTO 🍥 — motyw JASNY (pomarańcz + błękit ninja) ——— */
 :root[data-theme="naruto"]{
-  --bg:#0a0c14; --bg-tint:#111726; --paper:#131a2b; --paper-2:#1d2740;
-  --ink:#ffb257; --ink-2:#ff9a2e; --muted:#d97e28; --muted-2:#8f5a1c;
-  --accent:#ff7a18; --accent-deep:#e85d00; --accent-amber:#ffc07a;
-  --on-accent:#1a0c02; --star:#ffd9a8;
-  --chrome-1:#16203a; --chrome-2:#0b1120;
-  --chrome-ink:#ffbf70; --chrome-soft:#ff9a2e; --chrome-mut:#4f7fd6;
-  --globe-rgb:255,122,24; --globe-core:#ffe6c8; --rain:#ff7a18; --rain-op:.9; --crt-op:.55;
+  --bg:#fff5e8; --bg-tint:#ffebd2; --paper:#ffffff; --paper-2:#fff4e6;
+  --ink:#7a3800; --ink-2:#9a4e0e; --muted:#c07a2a; --muted-2:#d8a566;
+  --accent:#ff6a00; --accent-deep:#e05600; --accent-amber:#ffab52;
+  --on-accent:#fff2e6; --star:#ff6a00;
+  --chrome-1:#ffe9d0; --chrome-2:#ffdbb5;
+  --chrome-ink:#7a3800; --chrome-soft:#b0530a; --chrome-mut:#2f6fd6;
+  --globe-rgb:255,106,0; --globe-core:#7a3800;
+  --globe-bg:radial-gradient(135% 135% at 50% 12%, #fff7ee 0%, #ffe9d0 46%, #ffdab4 100%);
+  --globe-bg-shade:rgba(190,90,20,.15);
+  --rain:#ff6a00; --rain-op:1; --rain-bg:transparent; --crt-op:0;
 }
 
 /* ── 2. RESET / BAZA ──────────────────────────────────────── */
@@ -188,7 +203,18 @@ input{ caret-color:var(--accent); }
   box-shadow:0 0 0 1px rgba(0,0,0,.45), 0 0 26px var(--accent-glow), 0 20px 46px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
 }
 
-.brandGroup{ display:flex; align-items:center; gap:var(--s3); margin-right:auto; min-width:0; }
+.brandGroup{ display:flex; align-items:center; gap:var(--s3); min-width:0; flex-shrink:0; }
+
+/* wyszukiwarka w nagłówku (nowy układ) */
+.headSearch{ position:relative; display:flex; align-items:center; flex:1 1 auto; min-width:0; max-width:560px; margin:0 auto; }
+.headSearch > svg{ position:absolute; left:16px; width:18px; height:18px; color:var(--muted); pointer-events:none; }
+.headSearch #search{
+  flex:1; min-width:0; width:100%; height:46px; padding:0 52px 0 46px;
+  border-radius:var(--rp); border:1px solid var(--line-strong); background:var(--paper); color:var(--ink);
+  box-shadow:var(--sh1); transition:border-color var(--dur), box-shadow var(--dur);
+}
+.headSearch #search:focus{ border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-glow); }
+#btnFiltersMobile{ position:absolute; right:6px; display:none; width:36px; height:36px; padding:0; }
 .brandMark{
   width:50px; height:50px; flex-shrink:0; border-radius:13px; display:grid; place-items:center;
   background:radial-gradient(120% 120% at 30% 20%, var(--accent-amber), var(--accent-deep) 78%);
@@ -287,10 +313,41 @@ input{ caret-color:var(--accent); }
 .themeOpt.sel{ background:var(--accent-wash); color:var(--chrome-ink); }
 .themeOpt.sel .tick{ opacity:1; color:var(--accent); }
 
-/* ── 4. UKŁAD GŁÓWNY ──────────────────────────────────────── */
-#main{ display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:var(--s6); align-items:start; }
-#leftPanel{ min-width:0; }
-#rightPanel{ display:flex; flex-direction:column; gap:var(--s5); position:sticky; top:96px; }
+/* ── 4. UKŁAD GŁÓWNY — 3 kolumny: rail · siatka · teraz gra ── */
+#main{ display:grid; grid-template-columns:236px minmax(0,1fr) 340px; gap:var(--s5); align-items:start; }
+#centerCol{ min-width:0; }
+#rightPanel{ display:flex; flex-direction:column; gap:var(--s5); position:sticky; top:92px; }
+
+/* LEWY RAIL FILTRÓW */
+#filterRail{
+  position:sticky; top:92px; display:flex; flex-direction:column; gap:var(--s4);
+  padding:var(--s4); border-radius:var(--r4); border:1px solid var(--line-strong);
+  background:linear-gradient(160deg, var(--chrome-1), var(--chrome-2)); color:var(--chrome-ink);
+  box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 0 24px var(--accent-glow), 0 16px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.railHead{ display:flex; align-items:center; justify-content:space-between; }
+.railTitle{ font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--chrome-mut); }
+.railSection{ display:flex; flex-direction:column; gap:var(--s2); }
+.railLabel{ font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+.railChip{
+  display:flex; align-items:center; gap:9px; height:42px; padding:0 14px; border-radius:var(--r2);
+  border:1px solid var(--chrome-line); background:var(--chrome-fill); color:var(--chrome-soft);
+  font-weight:600; font-size:13.5px; cursor:pointer; transition:background var(--dur), color var(--dur), border-color var(--dur);
+}
+.railChip input{ display:none; }
+.railChipIco{ width:20px; text-align:center; font-size:14px; }
+.railChip:hover{ color:var(--chrome-ink); border-color:var(--line-strong); }
+.railChip.active{ background:var(--accent-wash); border-color:var(--accent); color:var(--accent); box-shadow:0 0 12px var(--accent-glow); }
+.railTools{ flex-direction:row; gap:var(--s2); }
+.railBtn{
+  flex:1; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:42px; padding:0 12px;
+  border-radius:var(--r2); border:1px solid var(--chrome-line); background:var(--chrome-fill); color:var(--chrome-soft);
+  font-weight:600; font-size:13px; transition:background var(--dur), color var(--dur), border-color var(--dur);
+}
+.railBtn svg{ width:16px; height:16px; }
+.railBtn:hover{ color:var(--chrome-ink); border-color:var(--line-strong); background:var(--accent-wash); }
+.railBtn.ghost{ border:none; background:transparent; }
+#filterRail .select{ flex:none; width:100%; min-width:0; }
 
 /* ── 5. WYSZUKIWARKA + FILTRY ─────────────────────────────── */
 #filterSection{ display:flex; flex-direction:column; gap:var(--s3); }
@@ -366,16 +423,18 @@ input{ caret-color:var(--accent); }
 #listHint{ color:var(--muted-2); font-style:italic; text-transform:none; letter-spacing:0; }
 
 #stationList{
-  display:flex; flex-direction:column; gap:6px; max-height:calc(100vh - 320px); overflow-y:auto; padding:6px;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(232px, 1fr)); gap:8px;
+  max-height:calc(100vh - 250px); overflow-y:auto; padding:8px; align-content:start;
   border-radius:var(--r3); border:1px solid var(--line-strong); background:var(--paper);
   box-shadow:0 0 0 1px rgba(0,0,0,.45), 0 0 26px var(--accent-glow), 0 18px 44px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
 }
 .row{
-  position:relative; display:flex; align-items:center; gap:var(--s3); padding:13px 14px; border-radius:var(--r2);
-  cursor:pointer; border:1px solid transparent; transition:background var(--dur), border-color var(--dur);
+  position:relative; display:flex; align-items:center; gap:var(--s3); padding:12px 13px; border-radius:var(--r2);
+  cursor:pointer; border:1px solid var(--line); background:var(--bg-tint);
+  transition:background var(--dur), border-color var(--dur), transform var(--dur);
 }
-.row + .row{ box-shadow:inset 0 1px 0 var(--line); }
-.row:hover{ background:var(--paper-2); }
+.row:hover{ background:var(--paper-2); border-color:var(--line-strong); transform:translateY(-1px); }
+.emptyState, .loadingState{ grid-column:1 / -1; }
 .row:hover .stationName .snText{ color:var(--accent); }
 .rowSelected{ background:var(--paper-2); border-color:var(--line); }
 .rowActive{ background:var(--accent-wash2); box-shadow:inset 3px 0 0 var(--accent), 0 0 16px var(--accent-glow); }
@@ -475,20 +534,30 @@ input{ caret-color:var(--accent); }
 .pbVol{ display:flex; align-items:center; gap:10px; flex:1 1 0; justify-content:flex-end; max-width:230px; }
 
 /* ── 9. RESPONSYWNOŚĆ ─────────────────────────────────────── */
-@media (max-width:1024px){
-  #main{ grid-template-columns:1fr; }
-  #rightPanel{ position:static; }
+/* średnie: rail + siatka, „Teraz gra” pełną szerokością pod spodem */
+@media (max-width:1180px){
+  #main{ grid-template-columns:210px minmax(0,1fr); }
+  #rightPanel{ grid-column:1 / -1; position:static; flex-direction:row; flex-wrap:wrap; }
+  #rightPanel .panelBlock{ flex:1 1 320px; }
   #stationList{ max-height:none; }
+}
+/* wąskie: wszystko w jednej kolumnie */
+@media (max-width:860px){
+  #main{ grid-template-columns:1fr; }
+  #filterRail{ position:static; }
+  #rightPanel{ flex-direction:column; }
 }
 @media (max-width:760px){
   #shell{ padding:var(--s3) var(--s3) 96px; }
-  #header{ top:var(--s2); padding:var(--s3) var(--s4); gap:var(--s3); }
+  #header{ top:var(--s2); padding:var(--s3) var(--s4); gap:var(--s3); flex-wrap:wrap; }
+  .headSearch{ order:3; flex:1 1 100%; max-width:none; margin:0; }
+  #btnFiltersMobile{ display:grid; place-items:center; }
   .themeBtnLabel{ display:none; }
-  .pbVol{ display:none; }               /* na wąskich ekranach chowamy głośność i Stop */
+  .pbVol{ display:none; }
   #btnStop{ display:none; }
-  .searchField{ flex-wrap:wrap; }
-  .searchField #search{ flex:1 1 100%; }
-  .filterToggle{ flex:1; justify-content:center; }
+  /* rail jako zwijany „szuflada” pod wyszukiwarką */
+  #filterRail{ display:none; }
+  #filterRail.open{ display:flex; }
 }
 @media (max-width:560px){ #listHint{ display:none; } }
 @media (max-width:420px){ .brandTitle{ font-size:21px; } .npStation{ font-size:21px; } .rowKbps{ display:none; } }

@@ -17,13 +17,13 @@
   /* — palety globusa per motyw — */
   var THEME_GLOBE = {
     green:     { style: "phosphor", dot: "0,255,65",   grid: "0,255,65", gridA: 0.5 },
-    amber:     { style: "phosphor", dot: "255,176,0",  grid: "255,176,0", gridA: 0.5 },
+    amber:     { style: "phosphor", light: true, dot: "232,147,12", grid: "212,140,20", gridA: 0.44 },
     crimson:   { style: "phosphor", light: true, dot: "214,28,28", grid: "200,30,30", gridA: 0.42 },
-    synthwave: { style: "neon", dot: "34,231,255", grid: "255,60,166", gridA: 0.55, sun: "255,60,166" },
-    violet:    { style: "neon", dot: "255,150,230", grid: "169,112,255", gridA: 0.55, sun: "169,112,255" },
-    cyan:      { style: "realistic", ocean: ["150,220,242", "70,150,200", "18,54,96"], landTint: [1.25, 1.28, 1.4], atm: "34,211,238", gridA: 0.12, ice: true },
-    cats:      { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "255,154,82", gridA: 0.10 },
-    naruto:    { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "255,122,24", gridA: 0.10 },
+    synthwave: { style: "neon", light: true, dot: "20,180,220", grid: "224,31,138", gridA: 0.5, sun: "224,31,138" },
+    violet:    { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "169,112,255", gridA: 0.10 },
+    cyan:      { style: "realistic", ocean: ["165,225,245", "95,175,215", "40,110,160"], landTint: [1.3, 1.32, 1.45], atm: "14,165,196", gridA: 0.14, ice: true },
+    cats:      { style: "phosphor", light: true, dot: "240,122,46", grid: "214,120,60", gridA: 0.4 },
+    naruto:    { style: "phosphor", light: true, dot: "255,106,0", grid: "230,110,20", gridA: 0.4 },
     _default:  { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "0,255,65", gridA: 0.10 }
   };
 
@@ -320,10 +320,10 @@
     if (phosphor) {
       var disc = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
       if (pal.light) {
-        /* jasna tarcza (motyw jasny) — „atlas" */
-        disc.addColorStop(0, "rgba(255,252,252,1)");
-        disc.addColorStop(0.62, "rgba(255,236,236,1)");
-        disc.addColorStop(1, "rgba(250,220,220,1)");
+        /* jasna, neutralna tarcza (motyw jasny) — „atlas" */
+        disc.addColorStop(0, "rgba(255,255,255,1)");
+        disc.addColorStop(0.62, "rgba(244,246,250,1)");
+        disc.addColorStop(1, "rgba(228,231,238,1)");
       } else {
         /* ciemna tarcza z delikatnym rozświetleniem od akcentu */
         disc.addColorStop(0, "rgba(" + ACC + ",0.12)");
@@ -460,11 +460,11 @@
         if (ly < 18) ly = activePt.y + activePt.r + 22;
         if (lx - twd / 2 - 8 < 4) lx = twd / 2 + 12;
         if (lx + twd / 2 + 8 > W - 4) lx = W - twd / 2 - 12;
-        ctx.fillStyle = "rgba(3,10,20,0.8)";
+        ctx.fillStyle = pal.light ? "rgba(255,255,255,0.92)" : "rgba(3,10,20,0.8)";
         roundRect(ctx, lx - twd / 2 - 8, ly - 10, twd + 16, 19, 9); ctx.fill();
-        ctx.strokeStyle = "rgba(" + ACC + ",0.4)"; ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(" + ACC + ",0.45)"; ctx.lineWidth = 1;
         roundRect(ctx, lx - twd / 2 - 8, ly - 10, twd + 16, 19, 9); ctx.stroke();
-        ctx.fillStyle = CORE; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = pal.light ? "rgb(45,32,28)" : CORE; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText(label, lx, ly);
         ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
       }

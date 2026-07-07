@@ -1303,7 +1303,7 @@ window.addEventListener("DOMContentLoaded", async function(){
   var THEMES = ["green", "amber", "cyan", "synthwave", "crimson", "violet", "cats", "naruto"];
   /* każdy motyw ma własny tryb tła (silnik w rain.js) */
   var THEME_BG = {
-    green: "matrix", amber: "dust", cyan: "snow", synthwave: "grid",
+    green: "matrix", amber: "bokeh", cyan: "snow", synthwave: "grid",
     crimson: "petals", violet: "stars", cats: "cats", naruto: "leaves"
   };
 
@@ -1406,10 +1406,11 @@ window.addEventListener("DOMContentLoaded", async function(){
     });
     markSelected(document.documentElement.getAttribute("data-theme") || "green");
 
-    /* — zwijane filtry — */
-    var ft = $("btnFilters"), panel = $("filterPanel");
+    /* — rail filtrów: przycisk „Filtry” w nagłówku (mobile) rozwija rail — */
+    var ft = $("btnFiltersMobile"), rail = $("filterRail");
     bind(ft, "click", function () {
-      var open = panel.classList.toggle("open");
+      if (!rail) return;
+      var open = rail.classList.toggle("open");
       ft.setAttribute("aria-expanded", open ? "true" : "false");
     });
 

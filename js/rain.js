@@ -14,7 +14,7 @@
 ════════════════════════════════════════════════════════════ */
 (function () {
   var THEME_MODE = {
-    green: "matrix", amber: "dust", cyan: "snow", synthwave: "grid",
+    green: "matrix", amber: "bokeh", cyan: "snow", synthwave: "grid",
     crimson: "petals", violet: "stars", cats: "cats", naruto: "leaves"
   };
 
@@ -25,7 +25,7 @@
 
     var MATRIX_G = "アイウエオカキクケコサシスセソタチツテトナニヌネノﾊﾋﾌﾍﾎマミムメモヤユヨラリルレロワヲ0123456789:.=*+<>".split("");
     var CATS = ["🐱", "🐾", "😺", "🐈", "😸", "🧶", "🐟"];
-    var LEAVES = ["🍃", "🍂", "🍁", "🍥", "忍", "風", "🌀"];
+    var LEAVES = ["🍥", "🌀", "🍁", "🍂", "🍃", "🍥", "🌀", "忍"];
 
     var W = 0, H = 0, raf = 0, last = 0, t = 0;
     var mode = "matrix", trail = 0.09, parts = [], drops = [], gridOff = 0, shoot = null, shootTimer = 3;
@@ -77,6 +77,9 @@
       } else if (mode === "petals") {
         trail = 0; n = Math.max(16, Math.round(W / 44));
         for (i = 0; i < n; i++) parts.push({ x: Math.random() * W, y: Math.random() * H, r: rnd(7, 20), vy: rnd(20, 46), vx: rnd(-10, 10), ph: rnd(0, 6.28), sw: rnd(14, 34), a: rnd(0.1, 0.26) });
+      } else if (mode === "bokeh") {
+        trail = 0; n = Math.max(20, Math.round(W / 40));
+        for (i = 0; i < n; i++) parts.push({ x: Math.random() * W, y: Math.random() * H, r: rnd(8, 34), vy: rnd(-30, -8), vx: rnd(-9, 9), ph: rnd(0, 6.28), sw: rnd(10, 26), a: rnd(0.07, 0.2) });
       } else if (mode === "grid") {
         trail = 0;
       }
@@ -106,6 +109,7 @@
       else if (mode === "stars") drawStars(dt);
       else if (mode === "dust") drawDust(dt);
       else if (mode === "petals") drawPetals(dt);
+      else if (mode === "bokeh") drawBokeh(dt);
       else if (mode === "grid") drawGrid(dt);
     }
 
@@ -213,6 +217,22 @@
         if (p.y > H + 24) { p.y = -24; p.x = Math.random() * W; }
         var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
         g.addColorStop(0, "rgba(" + col + "," + (p.a + 0.06) + ")");
+        g.addColorStop(1, "rgba(" + col + ",0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+      }
+    }
+
+    function drawBokeh(dt) {
+      var col = rgbOf("--rain", "232,147,12");
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 0.5 + p.ph) * p.sw) * dt; p.ph += dt * 0.4;
+        if (p.y < -36) { p.y = H + 36; p.x = Math.random() * W; }
+        var pulse = 0.7 + 0.3 * Math.sin(t * 1.2 + p.ph);
+        var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        g.addColorStop(0, "rgba(" + col + "," + (p.a * pulse + 0.05) + ")");
+        g.addColorStop(0.7, "rgba(" + col + "," + (p.a * pulse * 0.4) + ")");
         g.addColorStop(1, "rgba(" + col + ",0)");
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
