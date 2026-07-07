@@ -90,10 +90,28 @@
         <input type="range" class="volSlider" id="volSlider" min="0" max="100" value="65" step="1" />
         <span class="volLabel" id="volLabel">65%</span>
       </div>
-      <button class="themeBtn" id="btnTheme" type="button" aria-label="Zmień kolor fosforu (zielony / bursztynowy)" title="Fosfor: zielony / bursztynowy">
-        <svg class="ico-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M5 5l1.8 1.8M17.2 17.2L19 19M19 5l-1.8 1.8M6.8 17.2L5 19"/></svg>
-        <svg class="ico-amber" viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
-      </button>
+      <div class="themeWrap">
+        <button class="themeBtn" id="btnTheme" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu" aria-label="Wybierz motyw" title="Wybierz motyw">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.9 1.4-1.9-.3-.9.3-1.9 1.3-1.9H16a5 5 0 0 0 5-5c0-4.4-4-8.2-9-8.2z"/>
+            <circle cx="7.5" cy="12" r="1.1" fill="currentColor" stroke="none"/>
+            <circle cx="10" cy="7.5" r="1.1" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/>
+            <circle cx="17" cy="11" r="1.1" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+        <div class="themeMenu" id="themeMenu" role="menu" aria-label="Motywy" hidden>
+          <div class="themeMenuTitle">Motyw</div>
+          <button class="themeOpt" data-theme-val="green"     role="menuitemradio"><span class="tsw" style="--sw:#00ff41"></span>Matrix<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="amber"     role="menuitemradio"><span class="tsw" style="--sw:#ffb000"></span>Bursztyn<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="cyan"      role="menuitemradio"><span class="tsw" style="--sw:#22d3ee"></span>Lód<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="synthwave" role="menuitemradio"><span class="tsw" style="--sw:#ff3ca6"></span>Synthwave<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="crimson"   role="menuitemradio"><span class="tsw" style="--sw:#ff4d4d"></span>Krwista<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="violet"    role="menuitemradio"><span class="tsw" style="--sw:#a970ff"></span>Fiolet<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="cats"      role="menuitemradio"><span class="tswEmoji">🐱</span>Koty<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="naruto"    role="menuitemradio"><span class="tswEmoji">🍥</span>Naruto<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+        </div>
+      </div>
     </div>
   </div>
 

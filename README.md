@@ -4,9 +4,19 @@ Internetowe radio — polskie i światowe stacje (klubowe, rave, techno, hardsty
 
 🔗 Demo: https://radio-antomatee.vercel.app/
 
-## Motyw „Matrix"
+## Motywy (8 do wyboru, zapis w cookie)
 
-Interfejs w stylu terminala: czerń + fosforowa zieleń, kroje monospace (Share Tech Mono / JetBrains Mono), opadający kod w tle (canvas `#rain`) i delikatny efekt CRT. Przycisk w nagłówku przełącza kolor fosforu **zielony ↔ bursztynowy** (zapis w `localStorage`, klucz `radioantomatee-theme`). Filtry są zwijane (przycisk „Filtry" z odznaką liczby aktywnych), a sortowanie rozbudowano (nazwa, kraj, gatunek, bitrate, ulubione, HIT).
+Interfejs w stylu terminala: czerń + fosfor, kroje monospace (Share Tech Mono / JetBrains Mono), opadający kod w tle (canvas `#rain`) i delikatny efekt CRT. Przycisk „paleta" w nagłówku otwiera menu wyboru motywu:
+
+- **Matrix** (zielony, domyślny) · **Bursztyn** · **Lód** (cyan) · **Synthwave** (magenta) · **Krwista** (czerwień) · **Fiolet**
+- **Koty** 🐱 — ciepła paleta, a w tle zamiast kodu padają kotki
+- **Naruto** 🍥 — pomarańcz ninja, w tle japońskie znaki (忍 火 風 雷 影) i narutomaki
+
+Wybrany motyw zapisywany jest w **cookie** `radioantomatee_theme` (ważność 1 rok; automatyczna migracja ze starego `localStorage`). Architektura CSS: każdy motyw ustawia tylko „ziarna" kolorów, a wartości pochodne liczy `color-mix()` — dodanie kolejnego motywu to jeden blok zmiennych. Filtry są zwijane (przycisk „Filtry" z odznaką liczby aktywnych), sortowanie rozbudowane (nazwa, kraj, gatunek, bitrate, ulubione, HIT).
+
+## Kula ziemska (realistyczna)
+
+Panel „Teraz gra" renderuje realistyczną, obracającą się Ziemię na czystym canvasie 2D (bez bibliotek): niebieskie oceany z cieniowaniem **dzień/noc** (terminator śledzący słońce), lądy w barwach wg strefy (zieleń, pustynie, lód polarny), **światła miast** po stronie nocnej, poświata atmosfery (tint z motywu), gwiezdne tło i siatka południków. Kula płynnie dojeżdża do kraju grającej stacji z pulsującym markerem i etykietą.
 
 ## Struktura projektu
 
@@ -59,6 +69,9 @@ zapytań do Redisa (istotne przy limicie darmowego planu).
 
 ## Co nowego
 
+- 🎨 **8 motywów** z menu w nagłówku (w tym Koty 🐱 i Naruto 🍥), zapis w **cookie**
+- 🌍 **Realistyczna Ziemia** — oceany, terminator dzień/noc, światła miast, atmosfera, siatka geograficzna, gwiazdy
+- 📻 **Kuratorowane, pewne stacje** — stały zestaw sprawdzonych streamów (SomaFM) dołączany zawsze, także gdy API nie odpowiada; aplikacja nigdy nie zostaje z pustą listą
 - 🌍 **Kula ziemska** w panelu "Teraz gra" — obraca się, dojeżdża do kraju grającej stacji, pulsujący marker, markery wszystkich krajów ze stacjami
 - 🌐 **Stacje światowe** — top 300 wg głosów + tagi: rave, hardstyle, gabber, hardcore, hard techno, drum and bass, dubstep, psytrance, techno, house, trance, club (wszystkie dotychczasowe polskie zapytania zachowane)
 - 🇵🇱 **Flagi i polskie nazwy krajów**, nowy chip "Polskie", Polska zawsze pierwsza na liście krajów

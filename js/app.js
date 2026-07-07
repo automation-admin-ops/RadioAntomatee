@@ -49,6 +49,41 @@ var GENRE_PRIORITY = [
   "dzieci", "kids"
 ];
 
+/* ══════════════════════════════════════════════════════════
+   STACJE KURATOROWANE — pewne, stabilne streamy (zawsze działają)
+   Dodawane niezależnie od API: nawet gdy Radio Browser nie
+   odpowiada, użytkownik ma gwarantowany zestaw grających stacji.
+   SomaFM: bezpłatne, wieloletnie, stałe adresy MP3 (bez CORS).
+══════════════════════════════════════════════════════════ */
+var CURATED = [
+  { name: "SomaFM Groove Salad",        url: "https://ice1.somafm.com/groovesalad-128-mp3",      genre: "Chillout",   club: true,  featured: true },
+  { name: "SomaFM Beat Blender",        url: "https://ice1.somafm.com/beatblender-128-mp3",      genre: "Deep House", club: true },
+  { name: "SomaFM The Trip",            url: "https://ice1.somafm.com/thetrip-128-mp3",          genre: "Trance",     club: true },
+  { name: "SomaFM DEF CON Radio",       url: "https://ice1.somafm.com/defcon-128-mp3",           genre: "Electronic", club: true,  featured: true },
+  { name: "SomaFM cliqhop idm",         url: "https://ice1.somafm.com/cliqhop-128-mp3",          genre: "IDM",        club: true },
+  { name: "SomaFM Dub Step Beyond",     url: "https://ice1.somafm.com/dubstep-128-mp3",          genre: "Dubstep",    club: true },
+  { name: "SomaFM Suburbs of Goa",      url: "https://ice1.somafm.com/suburbsofgoa-128-mp3",     genre: "Psytrance",  club: true },
+  { name: "SomaFM PopTron",             url: "https://ice1.somafm.com/poptron-128-mp3",          genre: "Electro",    club: true },
+  { name: "SomaFM Vaporwaves",          url: "https://ice1.somafm.com/vaporwaves-128-mp3",       genre: "Vaporwave",  club: true },
+  { name: "SomaFM Space Station Soma",  url: "https://ice1.somafm.com/spacestation-128-mp3",     genre: "Electronic", club: true },
+  { name: "SomaFM Drone Zone",          url: "https://ice1.somafm.com/dronezone-128-mp3",        genre: "Ambient" },
+  { name: "SomaFM Mission Control",     url: "https://ice1.somafm.com/missioncontrol-128-mp3",   genre: "Ambient" },
+  { name: "SomaFM Fluid",               url: "https://ice1.somafm.com/fluid-128-mp3",            genre: "Hip-Hop" },
+  { name: "SomaFM Secret Agent",        url: "https://ice1.somafm.com/secretagent-128-mp3",      genre: "Lounge" },
+  { name: "SomaFM Illinois Street Lounge", url: "https://ice1.somafm.com/illstreet-128-mp3",     genre: "Lounge" },
+  { name: "SomaFM Underground 80s",     url: "https://ice1.somafm.com/u80s-128-mp3",             genre: "80s" },
+  { name: "SomaFM Left Coast 70s",      url: "https://ice1.somafm.com/seventies-128-mp3",        genre: "70s" },
+  { name: "SomaFM Seven Inch Soul",     url: "https://ice1.somafm.com/7soul-128-mp3",            genre: "Soul" },
+  { name: "SomaFM Heavyweight Reggae",  url: "https://ice1.somafm.com/reggae-128-mp3",           genre: "Reggae" },
+  { name: "SomaFM Indie Pop Rocks",     url: "https://ice1.somafm.com/indiepoprocks-128-mp3",    genre: "Indie" },
+  { name: "SomaFM Lush",                url: "https://ice1.somafm.com/lush-128-mp3",             genre: "Chillout" },
+  { name: "SomaFM Metal Detector",      url: "https://ice1.somafm.com/metal-128-mp3",            genre: "Metal" },
+  { name: "SomaFM Sonic Universe",      url: "https://ice1.somafm.com/sonicuniverse-128-mp3",    genre: "Jazz" },
+  { name: "SomaFM ThistleRadio",        url: "https://ice1.somafm.com/thistle-128-mp3",          genre: "Folk" },
+  { name: "SomaFM Boot Liquor",         url: "https://ice1.somafm.com/bootliquor-128-mp3",       genre: "Country" },
+  { name: "SomaFM Folk Forward",        url: "https://ice1.somafm.com/folkfwd-128-mp3",          genre: "Folk" }
+];
+
 /* Zepsute stacje wygasają po 24 h. */
 var BROKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
@@ -990,9 +1025,45 @@ function resolveRow(target){
 /* ══════════════════════════════════════════════════════════
    ODŚWIEŻANIE LISTY STACJI
 ══════════════════════════════════════════════════════════ */
+/* Kuratorowane stacje jako pełne obiekty (ID, flagi) — liczone raz. */
+var _curatedCache = null;
+function getCuratedStations(){
+  if (_curatedCache) return _curatedCache;
+  _curatedCache = CURATED.map(function(c){
+    var haystack = lower(c.name + " " + c.genre);
+    return {
+      id: makeId(c.url, c.name),
+      url: c.url,
+      name: c.name,
+      genre: c.genre || "Inne",
+      country: c.country || "US",
+      bitrate: c.bitrate || 128,
+      featured: (c.featured != null) ? !!c.featured : FEATURED_RE.test(c.name),
+      club: (c.club != null) ? !!c.club : CLUB_RE.test(haystack),
+      curated: true
+    };
+  });
+  return _curatedCache;
+}
+
+/* Dołącz kuratorowane stacje (bez duplikatów po URL). */
+function mergeCurated(list){
+  list = list || [];
+  var seen = {};
+  list.forEach(function(s){ if (s && s.url) seen[normUrl(s.url)] = 1; });
+  var extra = [];
+  getCuratedStations().forEach(function(s){
+    var k = normUrl(s.url);
+    if (!seen[k]) { seen[k] = 1; extra.push(s); }
+  });
+  return extra.concat(list);
+}
+
 function adoptStations(stations){
   /* odsiej śmieciowe nazwy także z cache (starsze wersje listy) */
   stations = (stations || []).filter(function(s){ return s && s.name && !isJunkName(s.name); });
+  /* zawsze dołóż pewne, kuratorowane stacje */
+  stations = mergeCurated(stations);
   state.stations = stations;
   renderFilterOptions();
 
@@ -1200,16 +1271,9 @@ window.addEventListener("DOMContentLoaded", async function(){
   var stations = await loadAllStations();
 
   if (!stations.length) {
-    $("stationList").innerHTML =
-      '<div class="emptyState">' +
-        '<div class="emptyIcon">' +
-          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3v10M12 17v.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
-        '</div>' +
-        '<strong style="color:var(--ink-2);">Nie udało się pobrać listy stacji</strong><br/>' +
-        '<span style="font-size:12px;">Radio Browser API nie odpowiada. Sprawdź połączenie i odśwież stronę.</span>' +
-      '</div>';
-    setStatus("bad", "Brak połączenia z API");
-    updateBrokenBadge();
+    /* API nie odpowiada — pokaż przynajmniej pewne, kuratorowane stacje */
+    adoptStations([]);
+    setStatus("warn", "API niedostępne — pokazuję pewne stacje. Kliknij „Odśwież”, by pobrać więcej.");
     return;
   }
 
@@ -1219,23 +1283,59 @@ window.addEventListener("DOMContentLoaded", async function(){
 });
 
 /* ════════════════════════════════════════════════════════════
-   MOTYW (zielony / bursztynowy fosfor) + ZWIJANE FILTRY
+   MOTYWY (8 do wyboru, zapis w COOKIE) + ZWIJANE FILTRY
    Warstwa dodatkowa — nie dotyka logiki danych/odtwarzacza.
 ════════════════════════════════════════════════════════════ */
 (function () {
-  var THEME_KEY = "radioantomatee-theme";
+  var THEME_COOKIE = "radioantomatee_theme";
+  var THEMES = ["green", "amber", "cyan", "synthwave", "crimson", "violet", "cats", "naruto"];
 
-  function applyTheme(t) {
-    if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
-    else document.documentElement.removeAttribute("data-theme");
-    var m = document.querySelector('meta[name=theme-color]');
-    if (m) m.setAttribute("content", t === "dark" ? "#0a0500" : "#000a02");
+  /* — cookies — */
+  function setCookie(name, val, days) {
+    var d = new Date(); d.setTime(Date.now() + days * 86400000);
+    document.cookie = name + "=" + encodeURIComponent(val) +
+      ";expires=" + d.toUTCString() + ";path=/;SameSite=Lax";
+  }
+  function getCookie(name) {
+    var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+    return m ? decodeURIComponent(m[1]) : null;
   }
 
-  /* zastosuj zapisany motyw natychmiast (skrypt jest `defer` — DOM gotowy) */
-  var saved = "green";
-  try { saved = localStorage.getItem(THEME_KEY) || "green"; } catch (e) {}
-  applyTheme(saved === "dark" ? "dark" : "green");
+  function updateMetaColor() {
+    var m = document.querySelector('meta[name=theme-color]');
+    if (!m) return;
+    var bg = "";
+    try { bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").replace(/^\s+|\s+$/g, ""); } catch (e) {}
+    if (bg) m.setAttribute("content", bg);
+  }
+
+  function markSelected(name) {
+    var opts = document.querySelectorAll(".themeOpt");
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].classList.toggle("sel", opts[i].getAttribute("data-theme-val") === name);
+      opts[i].setAttribute("aria-checked", opts[i].getAttribute("data-theme-val") === name ? "true" : "false");
+    }
+  }
+
+  function applyTheme(name) {
+    if (THEMES.indexOf(name) < 0) name = "green";
+    document.documentElement.setAttribute("data-theme", name);
+    updateMetaColor();
+    markSelected(name);
+  }
+
+  /* zastosuj zapisany motyw natychmiast (skrypt `defer` — DOM gotowy).
+     Migracja ze starego localStorage („dark" = bursztyn). */
+  var saved = getCookie(THEME_COOKIE);
+  if (!saved) {
+    try {
+      var old = localStorage.getItem("radioantomatee-theme");
+      if (old === "dark") saved = "amber";
+      else if (old) saved = "green";
+    } catch (e) {}
+    if (saved) setCookie(THEME_COOKIE, saved, 365);
+  }
+  applyTheme(saved || "green");
 
   function countActiveFilters() {
     var n = 0, f = state.filters;
@@ -1253,14 +1353,36 @@ window.addEventListener("DOMContentLoaded", async function(){
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    var bt = $("btnTheme");
-    bind(bt, "click", function () {
-      var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-      var next = isDark ? "green" : "dark";
-      applyTheme(next);
-      try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    /* — menu wyboru motywu — */
+    var bt = $("btnTheme"), menu = $("themeMenu");
+    function openMenu(open) {
+      if (!menu) return;
+      menu.hidden = !open;
+      if (bt) bt.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    bind(bt, "click", function (e) { stopEvt(e); openMenu(menu.hidden); });
+    bind(menu, "click", function (e) {
+      var b = e.target;
+      while (b && b !== menu && !(b.getAttribute && b.getAttribute("data-theme-val"))) b = b.parentNode;
+      if (b && b.getAttribute && b.getAttribute("data-theme-val")) {
+        var t = b.getAttribute("data-theme-val");
+        applyTheme(t);
+        setCookie(THEME_COOKIE, t, 365);
+        openMenu(false);
+      }
     });
+    bind(document, "click", function (e) {
+      if (!menu || menu.hidden) return;
+      var n = e.target;
+      while (n) { if (n === menu || n === bt) return; n = n.parentNode; }
+      openMenu(false);
+    });
+    bind(document, "keydown", function (e) {
+      if ((e.keyCode || 0) === 27 && menu && !menu.hidden) { openMenu(false); if (bt) bt.focus(); }
+    });
+    markSelected(document.documentElement.getAttribute("data-theme") || "green");
 
+    /* — zwijane filtry — */
     var ft = $("btnFilters"), panel = $("filterPanel");
     bind(ft, "click", function () {
       var open = panel.classList.toggle("open");
