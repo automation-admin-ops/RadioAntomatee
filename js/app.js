@@ -1288,6 +1288,10 @@ window.addEventListener("DOMContentLoaded", async function(){
     }
     _vtBusy = true;
     document.documentElement.classList.add("theme-anim");
+    /* zamroź deszcz na czas tranzycji — canvas nie rusza się „pod maską"
+       migawki, więc po odsłonięciu nie ma przeskoku pozycji; crossfade
+       trybu deszczu odgrywa się na żywo dopiero po wznowieniu */
+    try { if (window.RadioBG && window.RadioBG.pause) window.RadioBG.pause(); } catch (e) {}
     var done = function () {
       _vtBusy = false;
       document.documentElement.classList.remove("theme-anim");
@@ -1295,6 +1299,7 @@ window.addEventListener("DOMContentLoaded", async function(){
       if (document.documentElement.getAttribute("data-theme") !== _desiredTheme) {
         applyTheme(_desiredTheme);
       }
+      try { if (window.RadioBG && window.RadioBG.resume) window.RadioBG.resume(); } catch (e) {}
     };
     var vt;
     try { vt = document.startViewTransition(function () { applyTheme(_desiredTheme); }); }

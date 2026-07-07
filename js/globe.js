@@ -352,7 +352,7 @@
     /* lądy */
     var x, y, z, sxp, syp, depth, rr, light, day, cr, cg, cb;
     var sunx = this.sun.x, suny = this.sun.y, sunz = this.sun.z;
-    var Rk = R / 150;
+    var Rk = R / 112;
     var tint = pal.landTint || [1, 1, 1];
     var dotCol = pal.dot || ACC;
 
@@ -363,13 +363,16 @@
       sxp = cx + v[0] * R;
       syp = cy - v[1] * R;
       depth = v[2];
-      rr = (1.15 + depth * 0.5) * Rk;
+      /* kwadratowe kropki (fillRect) — kilkukrotnie szybsze niż arc,
+         co pozwala na gęsty ląd (~7000 punktów) bez zacięć */
+      rr = (1.3 + depth * 0.45) * Rk;
+      var d2 = rr * 2;
 
       if (phosphor) {
         /* świecące kropki lądu w kolorze akcentu / dwukolorowo */
         ctx.globalAlpha = 0.35 + depth * 0.6;
         ctx.fillStyle = "rgb(" + dotCol + ")";
-        ctx.beginPath(); ctx.arc(sxp, syp, rr, 0, 6.283); ctx.fill();
+        ctx.fillRect(sxp - rr, syp - rr, d2, d2);
         continue;
       }
 
@@ -382,16 +385,16 @@
         cb = Math.min(255, this.dotB[i] * tint[2] * shade * 255) | 0;
         ctx.fillStyle = "rgb(" + cr + "," + cg + "," + cb + ")";
         ctx.globalAlpha = 0.55 + depth * 0.45;
-        ctx.beginPath(); ctx.arc(sxp, syp, rr, 0, 6.283); ctx.fill();
+        ctx.fillRect(sxp - rr, syp - rr, d2, d2);
       } else {
         ctx.globalAlpha = 0.5 + depth * 0.3;
         ctx.fillStyle = pal.ice ? "rgb(30,50,70)" : "rgb(10,20,30)";
-        ctx.beginPath(); ctx.arc(sxp, syp, rr, 0, 6.283); ctx.fill();
+        ctx.fillRect(sxp - rr, syp - rr, d2, d2);
         if (this.dotCity[i] && !pal.ice) {
           var flick = 0.6 + 0.4 * Math.sin(time * 3 + i);
           ctx.globalAlpha = (0.25 + depth * 0.4) * flick;
           ctx.fillStyle = "rgb(255,214,140)";
-          ctx.beginPath(); ctx.arc(sxp, syp, rr * 0.62, 0, 6.283); ctx.fill();
+          var cr2 = rr * 0.62; ctx.fillRect(sxp - cr2, syp - cr2, cr2 * 2, cr2 * 2);
         }
       }
     }

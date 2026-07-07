@@ -59,6 +59,11 @@
 
     function seed(s) {
       s.parts = []; s.drops = []; s.gridOff = 0; s.shoot = null; s.shootTimer = 3;
+      /* zapamiętaj kolory MOTYWU w chwili tworzenia stanu — dzięki temu
+         podczas zmiany motywu stary tryb zachowuje swoje kolory i płynnie
+         zanika, a nowy pojawia się w nowych kolorach (bez przeskoku barwy) */
+      s.rainHex = cssvar("--rain", "#00ff66");
+      s.rainRGB = rgbOf("--rain", "0,255,102");
       var m = s.mode, i, n;
       if (m === "matrix") {
         s.trail = 0.09;
@@ -136,7 +141,7 @@
     }
 
     function drawMatrix(s, dt, A) {
-      var FS = 15, col = cssvar("--rain", "#00ff66"), drops = s.drops;
+      var FS = 15, col = s.rainHex, drops = s.drops;
       ctx.font = FS + "px 'Share Tech Mono', monospace";
       ctx.globalAlpha = A;
       for (var i = 0; i < drops.length; i++) {
@@ -170,7 +175,7 @@
 
     function drawSnow(s, dt, A) {
       var parts = s.parts;
-      ctx.fillStyle = "rgba(" + rgbOf("--rain", "170,225,255") + ",0.9)";
+      ctx.fillStyle = "rgba(" + s.rainRGB + ",0.9)";
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.y += p.vy * dt; p.x += Math.sin(t * 0.8 + p.ph) * p.sw * dt;
@@ -182,7 +187,7 @@
     }
 
     function drawEmbers(s, dt, A) {
-      var parts = s.parts, base = rgbOf("--rain", "255,90,60");
+      var parts = s.parts, base = s.rainRGB;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 2 + p.fl) * 8) * dt; p.life -= dt * 0.32;
@@ -196,7 +201,7 @@
     }
 
     function drawStars(s, dt, A) {
-      var parts = s.parts, col = rgbOf("--rain", "169,112,255");
+      var parts = s.parts, col = s.rainRGB;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.x += p.vx * dt; if (p.x < -2) { p.x = W + 2; p.y = Math.random() * H; }
@@ -222,7 +227,7 @@
     }
 
     function drawDust(s, dt, A) {
-      var parts = s.parts, col = rgbOf("--rain", "255,176,0");
+      var parts = s.parts, col = s.rainRGB;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.x += (p.vx + Math.sin(t * 0.5 + p.ph) * 6) * dt; p.y += p.vy * dt;
@@ -236,7 +241,7 @@
     }
 
     function drawPetals(s, dt, A) {
-      var parts = s.parts, col = rgbOf("--rain", "225,29,29");
+      var parts = s.parts, col = s.rainRGB;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 0.7 + p.ph) * p.sw) * dt; p.ph += dt * 0.6;
@@ -250,7 +255,7 @@
     }
 
     function drawBokeh(s, dt, A) {
-      var parts = s.parts, col = rgbOf("--rain", "232,147,12");
+      var parts = s.parts, col = s.rainRGB;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 0.5 + p.ph) * p.sw) * dt; p.ph += dt * 0.4;
@@ -267,7 +272,7 @@
 
     function drawGrid(s, dt, A) {
       s.gridOff = (s.gridOff + dt * 0.35) % 1;
-      var col = rgbOf("--rain", "255,60,166");
+      var col = s.rainRGB;
       var hy = H * 0.46, vpx = W / 2;
       /* słońce nad horyzontem */
       ctx.globalAlpha = A;
@@ -328,6 +333,14 @@
         prev = null; fade = 1;
         resize();
         if (reduce) { ctx.clearRect(0, 0, W, H); return; }
+        cancelAnimationFrame(raf); last = 0; raf = requestAnimationFrame(frame);
+      },
+      /* Wstrzymanie/wznowienie — używane podczas View Transition, aby
+         canvas nie ruszał się „pod maską" i nie było przeskoku pozycji
+         przy odsłonięciu; crossfade trybu gra się na żywo po wznowieniu. */
+      pause: function () { cancelAnimationFrame(raf); raf = 0; },
+      resume: function () {
+        if (reduce || document.hidden) return;
         cancelAnimationFrame(raf); last = 0; raf = requestAnimationFrame(frame);
       }
     };
