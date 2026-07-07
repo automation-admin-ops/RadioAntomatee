@@ -5,7 +5,7 @@
    cache'owane — zawsze lecą prosto do sieci.
 ════════════════════════════════════════════════════════════ */
 
-var CACHE_NAME = "antomatee-v9";
+var CACHE_NAME = "antomatee-v10";
 
 var PRECACHE = [
   "./",

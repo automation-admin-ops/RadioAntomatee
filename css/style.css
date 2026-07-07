@@ -115,7 +115,7 @@
 }
 :root[data-theme="crimson"] ::placeholder{ color:#c78a8a; }
 
-/* ——— VIOLET (ultrafiolet) ——— */
+/* ——— KOSMOS (klucz: violet) ——— */
 :root[data-theme="violet"]{
   --bg:#0a0518; --bg-tint:#140a2a; --paper:#1a0e38; --paper-2:#26154e;
   --ink:#c4a0ff; --ink-2:#a878f0; --muted:#8659c9; --muted-2:#5e3d94;
