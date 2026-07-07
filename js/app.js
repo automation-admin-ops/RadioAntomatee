@@ -1274,18 +1274,39 @@ window.addEventListener("DOMContentLoaded", async function(){
   }
 
   /* Płynne przejście między motywami — View Transitions API (Chrome).
-     Bez wsparcia lub przy reduce-motion: natychmiast. */
+     Bez wsparcia / reduce-motion / trwającej tranzycji: natychmiast
+     (tło i tak robi własny płynny crossfade cząsteczek).
+     _desiredTheme trzyma OSTATNIO żądany motyw — callback tranzycji
+     i finalne uzgodnienie zawsze stosują właśnie jego, więc szybkie
+     przełączanie nigdy nie gubi ostatniego wyboru. */
+  var _vtBusy = false, _desiredTheme = null;
   function switchTheme(name) {
-    if (document.startViewTransition && !prefersReduced()) {
-      document.documentElement.classList.add("theme-anim");
-      var vt = document.startViewTransition(function () { applyTheme(name); });
-      if (vt && vt.finished && vt.finished.then) {
-        vt.finished.then(function () { document.documentElement.classList.remove("theme-anim"); },
-                         function () { document.documentElement.classList.remove("theme-anim"); });
-      }
-    } else {
+    _desiredTheme = name;
+    if (!document.startViewTransition || prefersReduced() || _vtBusy) {
       applyTheme(name);
+      return;
     }
+    _vtBusy = true;
+    document.documentElement.classList.add("theme-anim");
+    var done = function () {
+      _vtBusy = false;
+      document.documentElement.classList.remove("theme-anim");
+      /* uzgodnij stan końcowy z ostatnim żądaniem */
+      if (document.documentElement.getAttribute("data-theme") !== _desiredTheme) {
+        applyTheme(_desiredTheme);
+      }
+    };
+    var vt;
+    try { vt = document.startViewTransition(function () { applyTheme(_desiredTheme); }); }
+    catch (e) { applyTheme(_desiredTheme); done(); return; }
+    /* obsłuż wszystkie promisy, by przerwana tranzycja nie rzucała
+       nieobsłużonym błędem (InvalidStateError przy szybkich zmianach) */
+    if (vt) {
+      if (vt.finished && vt.finished.then) vt.finished.then(done, done);
+      else done();
+      if (vt.ready && vt.ready.then) vt.ready.then(null, function () {});
+      if (vt.updateCallbackDone && vt.updateCallbackDone.then) vt.updateCallbackDone.then(null, function () {});
+    } else { done(); }
   }
 
   /* zastosuj zapisany motyw natychmiast (skrypt `defer` — DOM gotowy).
