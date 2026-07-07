@@ -728,11 +728,20 @@ function rebindRowEls(){
   });
 }
 
+function stationInitial(name){
+  var m = ("" + (name || "")).match(/[A-Za-z0-9ĄĆĘŁŃÓŚŹŻąćęłńóśźż]/);
+  return safeText((m ? m[0] : (name || "•").charAt(0) || "•").toUpperCase());
+}
+
 function buildRowHtml(st, i){
   var fav    = !!state.favorites[st.id];
   var active = (st.id === state.activeId);
+  var playing = (audioState===3||audioState===6||audioState===11);
   return '<div class="' + rowClass(i, st) + '" data-row="1" data-index="' + i + '">' +
-    '<span class="rowStar' + (fav ? ' starFav' : '') + '" data-action="fav" title="Ulubione">' + (fav ? '★' : '☆') + '</span>' +
+    '<div class="rowArt">' +
+      '<span class="rowArtInitial">' + stationInitial(st.name) + '</span>' +
+      (active ? '<div class="rowArtEq miniEq' + (playing ? '' : ' paused') + '"><span></span><span></span><span></span></div>' : '') +
+    '</div>' +
     '<div class="rowInfo">' +
       '<div class="stationName">' +
         '<span class="snText">' + safeText(st.name) + '</span>' +
@@ -746,7 +755,7 @@ function buildRowHtml(st, i){
     '</div>' +
     '<div class="rowMeta">' +
       (st.bitrate ? '<span class="rowKbps">' + st.bitrate + 'k</span>' : '') +
-      (active ? '<div class="miniEq' + ((audioState===3||audioState===6||audioState===11)?'':' paused') + '"><span></span><span></span><span></span></div>' : '') +
+      '<span class="rowStar' + (fav ? ' starFav' : '') + '" data-action="fav" title="Ulubione">' + (fav ? '★' : '☆') + '</span>' +
     '</div>' +
   '</div>';
 }
@@ -1239,8 +1248,11 @@ window.addEventListener("DOMContentLoaded", async function(){
   updatePlayButton(1);
   bindUi();
 
-  /* globus */
-  try { globe = new RadioGlobe($("globeCanvas")); } catch(e){ globe = null; }
+  /* globus — ze stylem bieżącego motywu */
+  try {
+    globe = new RadioGlobe($("globeCanvas"));
+    globe.setTheme(document.documentElement.getAttribute("data-theme") || "green");
+  } catch(e){ globe = null; }
 
   /* Service Worker — aplikacja działa jako PWA i startuje błyskawicznie */
   if ("serviceWorker" in navigator && location.protocol === "https:") {
@@ -1289,6 +1301,17 @@ window.addEventListener("DOMContentLoaded", async function(){
 (function () {
   var THEME_COOKIE = "radioantomatee_theme";
   var THEMES = ["green", "amber", "cyan", "synthwave", "crimson", "violet", "cats", "naruto"];
+  /* każdy motyw ma własny tryb tła (silnik w rain.js) */
+  var THEME_BG = {
+    green: "matrix", amber: "dust", cyan: "snow", synthwave: "grid",
+    crimson: "petals", violet: "stars", cats: "cats", naruto: "leaves"
+  };
+
+  /* rozgłoś motyw do globusa i tła (jeśli już istnieją) */
+  function applyThemeEffects(name) {
+    try { if (typeof globe !== "undefined" && globe && globe.setTheme) globe.setTheme(name); } catch (e) {}
+    try { if (window.RadioBG && window.RadioBG.setMode) window.RadioBG.setMode(THEME_BG[name] || "matrix"); } catch (e) {}
+  }
 
   /* — cookies — */
   function setCookie(name, val, days) {
@@ -1322,6 +1345,7 @@ window.addEventListener("DOMContentLoaded", async function(){
     document.documentElement.setAttribute("data-theme", name);
     updateMetaColor();
     markSelected(name);
+    applyThemeEffects(name);
   }
 
   /* zastosuj zapisany motyw natychmiast (skrypt `defer` — DOM gotowy).

@@ -39,7 +39,7 @@
 <div id="shell">
 
   <!-- HEADER -->
-  <div id="header">
+  <header id="header">
     <div class="brandGroup">
       <div class="brandMark">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -55,41 +55,13 @@
           <span class="liveDot" id="statusDot"></span>
           <span id="statusText">Ładowanie…</span>
           <span class="onlineChip" id="onlineChip" hidden title="Osoby korzystające teraz z aplikacji">
-            <span class="onlineDot"></span>Aktualna liczba słuchaczy:&nbsp;<b id="onlineCount">—</b>
+            <span class="onlineDot"></span>Słuchaczy:&nbsp;<b id="onlineCount">—</b>
           </span>
         </div>
       </div>
     </div>
 
     <div class="toolbar">
-      <button class="ctrlBtn" id="btnPrev" title="Poprzednia (←)" aria-label="Poprzednia">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 5v14M18 5L8 12l10 7V5z" fill="currentColor"/>
-        </svg>
-      </button>
-      <button class="ctrlBtn primary" id="btnPlay" title="Graj / Pauza (spacja)" aria-label="Graj">
-        <svg id="btnPlayIcon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7 5l12 7-12 7V5z"/>
-        </svg>
-      </button>
-      <button class="ctrlBtn" id="btnNext" title="Następna (→)" aria-label="Następna">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 5v14M6 5l10 7-10 7V5z" fill="currentColor"/>
-        </svg>
-      </button>
-      <button class="ctrlBtn" id="btnStop" title="Stop" aria-label="Stop">
-        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <rect x="6" y="6" width="12" height="12" rx="1.5"/>
-        </svg>
-      </button>
-      <div class="volWrap" title="Głośność">
-        <svg id="volIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/>
-          <path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        <input type="range" class="volSlider" id="volSlider" min="0" max="100" value="65" step="1" />
-        <span class="volLabel" id="volLabel">65%</span>
-      </div>
       <div class="themeWrap">
         <button class="themeBtn" id="btnTheme" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu" aria-label="Wybierz motyw" title="Wybierz motyw">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -99,27 +71,28 @@
             <circle cx="14.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/>
             <circle cx="17" cy="11" r="1.1" fill="currentColor" stroke="none"/>
           </svg>
+          <span class="themeBtnLabel">Motyw</span>
         </button>
         <div class="themeMenu" id="themeMenu" role="menu" aria-label="Motywy" hidden>
-          <div class="themeMenuTitle">Motyw</div>
-          <button class="themeOpt" data-theme-val="green"     role="menuitemradio"><span class="tsw" style="--sw:#00ff41"></span>Matrix<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="amber"     role="menuitemradio"><span class="tsw" style="--sw:#ffb000"></span>Bursztyn<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="cyan"      role="menuitemradio"><span class="tsw" style="--sw:#22d3ee"></span>Lód<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="synthwave" role="menuitemradio"><span class="tsw" style="--sw:#ff3ca6"></span>Synthwave<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="crimson"   role="menuitemradio"><span class="tsw" style="--sw:#ff4d4d"></span>Krwista<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="violet"    role="menuitemradio"><span class="tsw" style="--sw:#a970ff"></span>Fiolet<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="cats"      role="menuitemradio"><span class="tswEmoji">🐱</span>Koty<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="naruto"    role="menuitemradio"><span class="tswEmoji">🍥</span>Naruto<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <div class="themeMenuTitle">Wybierz motyw</div>
+          <button class="themeOpt" data-theme-val="green"     role="menuitemradio"><span class="tsw" style="--sw:#00ff41">🖥️</span>Matrix<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="amber"     role="menuitemradio"><span class="tsw" style="--sw:#ffb000">🍯</span>Bursztyn<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="cyan"      role="menuitemradio"><span class="tsw" style="--sw:#22d3ee">❄️</span>Lód<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="synthwave" role="menuitemradio"><span class="tsw" style="--sw:#ff3ca6">🌆</span>Synthwave<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="crimson"   role="menuitemradio"><span class="tsw" style="--sw:#ff4d4d">🩸</span>Krwista<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="violet"    role="menuitemradio"><span class="tsw" style="--sw:#a970ff">🔮</span>Fiolet<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="cats"      role="menuitemradio"><span class="tsw" style="--sw:#ff9a52">🐱</span>Koty<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="naruto"    role="menuitemradio"><span class="tsw" style="--sw:#ff7a18">🍥</span>Naruto<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
         </div>
       </div>
     </div>
-  </div>
+  </header>
 
   <!-- MAIN -->
-  <div id="main">
-    <div id="leftPanel">
+  <main id="main">
+    <section id="leftPanel">
 
-      <!-- FILTRY + NARZĘDZIA -->
+      <!-- WYSZUKIWARKA + FILTRY -->
       <div id="filterSection">
         <div class="searchField">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -202,10 +175,10 @@
       </div>
 
       <div id="stationList" tabindex="0"></div>
-    </div>
+    </section>
 
     <!-- PRAWY PANEL: TERAZ GRA + GLOBUS -->
-    <div id="rightPanel">
+    <aside id="rightPanel">
       <div class="panelBlock">
         <div class="panelTitle">Teraz gra</div>
         <div class="npHero">
@@ -222,7 +195,7 @@
         </div>
       </div>
 
-      <div class="panelBlock">
+      <div class="panelBlock kbdBlock">
         <div class="panelTitle">Skróty klawiaturowe</div>
         <div class="kbdList">
           <div class="kbdRow">
@@ -249,42 +222,47 @@
             <span class="kbdLabel">Wycisz</span>
             <span class="kbdKeys"><span class="kbdKey">M</span></span>
           </div>
-          <div class="kbdRow">
-            <span class="kbdLabel">Szukaj</span>
-            <span class="kbdKeys"><span class="kbdKey">S</span></span>
-          </div>
         </div>
       </div>
-    </div>
-  </div>
+    </aside>
+  </main>
 </div>
 
-<!-- ODTWARZACZ MOBILNY -->
-<div id="mobilePlayer">
-  <div class="mpInner">
-    <div class="mpArt paused" id="mpArt">
-      <div class="mpEq"><span></span><span></span><span></span></div>
+<!-- DOLNY PASEK ODTWARZACZA (desktop + mobile) -->
+<div id="playerBar">
+  <div class="pbInner">
+    <div class="pbNow">
+      <div class="mpArt paused" id="mpArt">
+        <div class="mpEq"><span></span><span></span><span></span></div>
+      </div>
+      <div class="pbText">
+        <div class="mpName" id="mpName">Wybierz stację</div>
+        <div class="mpMeta" id="mpMeta">—</div>
+      </div>
     </div>
-    <div class="mpInfo">
-      <div class="mpName" id="mpName">Wybierz stację</div>
-      <div class="mpMeta" id="mpMeta">—</div>
+
+    <div class="pbControls">
+      <button class="ctrlBtn" id="btnPrev" title="Poprzednia (←)" aria-label="Poprzednia">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 5v14M18 5L8 12l10 7V5z"/></svg>
+      </button>
+      <button class="ctrlBtn primary" id="btnPlay" title="Graj / Pauza (spacja)" aria-label="Graj">
+        <svg id="btnPlayIcon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7 5l12 7-12 7V5z"/></svg>
+      </button>
+      <button class="ctrlBtn" id="btnNext" title="Następna (→)" aria-label="Następna">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18 5v14M6 5l10 7-10 7V5z"/></svg>
+      </button>
+      <button class="ctrlBtn" id="btnStop" title="Stop" aria-label="Stop">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+      </button>
     </div>
-    <div class="mpControls">
-      <button class="mpBtn" id="mpPrev" aria-label="Poprzednia">
-        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 5v14M18 5L8 12l10 7V5z"/>
-        </svg>
-      </button>
-      <button class="mpBtnPlay" id="mpPlay" aria-label="Graj">
-        <svg id="mpPlayIcon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7 5l12 7-12 7V5z"/>
-        </svg>
-      </button>
-      <button class="mpBtn" id="mpNext" aria-label="Następna">
-        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 5v14M6 5l10 7-10 7V5z"/>
-        </svg>
-      </button>
+
+    <div class="pbVol volWrap" title="Głośność">
+      <svg id="volIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/>
+        <path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <input type="range" class="volSlider" id="volSlider" min="0" max="100" value="65" step="1" />
+      <span class="volLabel" id="volLabel">65%</span>
     </div>
   </div>
 </div>
