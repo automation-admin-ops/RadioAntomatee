@@ -49,7 +49,9 @@
     this.pitch = 20 * DEG;
     this.targetYaw = null;
     this.targetPitch = 20 * DEG;
-    this.spinSpeed = 0.085;
+    /* ujemny = widok dryfuje na zachód, czyli kontynenty płyną w prawo —
+       tak wygląda obrót prawdziwej Ziemi oglądanej z kosmosu */
+    this.spinSpeed = -0.085;
 
     var sunLat = 16 * DEG, sunLon = -34 * DEG, scl = Math.cos(sunLat);
     this.sun = { x: scl * Math.cos(sunLon), y: Math.sin(sunLat), z: scl * Math.sin(sunLon) };
@@ -251,15 +253,19 @@
     } else {
       this.yaw += this.spinSpeed * dt;
       if (this.yaw > Math.PI) this.yaw -= 2 * Math.PI;
+      if (this.yaw < -Math.PI) this.yaw += 2 * Math.PI;
     }
     var dp = this.targetPitch - this.pitch;
     this.pitch += dp * Math.min(1, dt * 2.1);
   };
 
+  /* Rzut na ekran: out[0] rośnie na WSCHÓD od środka widoku (znak minus
+     przy rx) — bez tego kula była lustrzanym odbiciem: wschód lądował po
+     lewej, a kontynenty wyglądały „na odwrót" mimo poprawnego znacznika. */
   function rot(x, y, z, sy, cyaw, sp, cp, out) {
     var rx = x * cyaw + z * sy;
     var rz = -x * sy + z * cyaw;
-    out[0] = rx;
+    out[0] = -rx;
     out[1] = y * cp - rz * sp;
     out[2] = y * sp + rz * cp;
   }
