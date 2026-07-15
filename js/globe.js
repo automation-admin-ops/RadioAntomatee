@@ -72,7 +72,6 @@
     this._running = false;
     this._lastT = 0;
     this._raf = 0;
-    this._dpr = 1;
 
     this._prepareDots();
     this._prepareStars();
@@ -143,7 +142,6 @@
     var rect = this.canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     var dpr = Math.min(global.devicePixelRatio || 1, 2);
-    this._dpr = dpr;
     this.canvas.width = Math.round(rect.width * dpr);
     this.canvas.height = Math.round(rect.height * dpr);
     this.w = rect.width;
@@ -158,6 +156,10 @@
   /* — API publiczne — */
   RadioGlobe.prototype.setTheme = function (name) {
     this.pal = THEME_GLOBE[name] || THEME_GLOBE._default;
+    /* zmienne CSS czytane RAZ przy zmianie motywu, nie w każdej klatce —
+       getComputedStyle w pętli rAF wymuszał recalc stylów ~70×/s */
+    this._acc = themeRGB();
+    this._core = themeCore();
     if (!this._running) this._draw(0);
   };
 
@@ -269,7 +271,7 @@
     if (!this.w || !this.h) return;
     var W = this.w, H = this.h, R = this.R, cx = this.cx, cy = this.cy;
     var pal = this.pal, phosphor = (pal.style === "phosphor" || pal.style === "neon");
-    var ACC = themeRGB(), CORE = themeCore();
+    var ACC = this._acc || themeRGB(), CORE = this._core || themeCore();
 
     ctx.clearRect(0, 0, W, H);
 
@@ -355,6 +357,7 @@
     var Rk = R / 112;
     var tint = pal.landTint || [1, 1, 1];
     var dotCol = pal.dot || ACC;
+    if (phosphor) ctx.fillStyle = "rgb(" + dotCol + ")";
 
     for (i = 0; i < this.dotCount; i++) {
       x = this.dotX[i]; y = this.dotY[i]; z = this.dotZ[i];
@@ -369,9 +372,8 @@
       var d2 = rr * 2;
 
       if (phosphor) {
-        /* świecące kropki lądu w kolorze akcentu / dwukolorowo */
+        /* świecące kropki lądu — fillStyle stały, ustawiony raz przed pętlą */
         ctx.globalAlpha = 0.35 + depth * 0.6;
-        ctx.fillStyle = "rgb(" + dotCol + ")";
         ctx.fillRect(sxp - rr, syp - rr, d2, d2);
         continue;
       }

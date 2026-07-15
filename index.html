@@ -8,6 +8,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#000a02" />
   <meta name="description" content="Radio Antomatee — polskie i światowe stacje radiowe online. Klubowe, rave, hardstyle i więcej." />
+  <!-- CSP: ciasny script-src (self, bez CDN — hls.js self-hostowany);
+       connect/media szerokie https:, bo streamy stacji to dowolne hosty z API -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; media-src https: blob:; object-src 'none'; base-uri 'self'" />
+  <meta property="og:title" content="Radio Antomatee" />
+  <meta property="og:description" content="Polskie i światowe stacje radiowe online — klubowe, rave, hardstyle i więcej. 8 motywów, globus na żywo." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="icons/icon-512.png" />
+  <meta name="twitter:card" content="summary" />
   <title>Radio Antomatee</title>
 
   <link rel="manifest" href="manifest.json" />
@@ -27,8 +35,9 @@
   <link rel="dns-prefetch" href="https://fr1.api.radio-browser.info">
   <link rel="dns-prefetch" href="https://nl1.api.radio-browser.info">
 
-  <!-- HLS dla streamów m3u8 (Polskie Radio itd.) -->
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
+  <!-- HLS dla streamów m3u8 (Polskie Radio itd.) — self-hostowany:
+       działa offline/przy awarii CDN i eliminuje supply-chain z CDN -->
+  <script defer src="js/vendor/hls.min.js"></script>
 
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -53,7 +62,7 @@
         <div class="brandTitle">Radio <em>Antomatee</em></div>
         <div class="brandSub">
           <span class="liveDot" id="statusDot"></span>
-          <span id="statusText">Ładowanie…</span>
+          <span id="statusText" role="status" aria-live="polite">Ładowanie…</span>
           <span class="onlineChip" id="onlineChip" hidden title="Osoby korzystające teraz z aplikacji">
             <span class="onlineDot"></span>Słuchaczy:&nbsp;<b id="onlineCount">—</b>
           </span>
@@ -67,7 +76,7 @@
         <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
       <input id="search" type="text" placeholder="Szukaj stacji, gatunku, kraju…" autocomplete="off" />
-      <button class="railBtn ghost" id="btnFiltersMobile" type="button" aria-label="Filtry" title="Filtry">
+      <button class="railBtn ghost" id="btnFiltersMobile" type="button" aria-label="Filtry" title="Filtry" aria-controls="filterRail" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
       </button>
     </div>
@@ -91,7 +100,8 @@
           <button class="themeOpt" data-theme-val="amber"     role="menuitemradio"><span class="tsw" style="--sw:#ffb000">🍯</span>Bursztyn<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="cyan"      role="menuitemradio"><span class="tsw" style="--sw:#22d3ee">❄️</span>Lód<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="synthwave" role="menuitemradio"><span class="tsw" style="--sw:#ff3ca6">🌆</span>Synthwave<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
-          <button class="themeOpt" data-theme-val="crimson"   role="menuitemradio"><span class="tsw" style="--sw:#e11d1d">🩸</span>Krwista<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>          <button class="themeOpt" data-theme-val="cats"      role="menuitemradio"><span class="tsw" style="--sw:#ff9a52">🐱</span>Koty<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="crimson"   role="menuitemradio"><span class="tsw" style="--sw:#e11d1d">🩸</span>Krwista<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
+          <button class="themeOpt" data-theme-val="cats"      role="menuitemradio"><span class="tsw" style="--sw:#ff9a52">🐱</span>Koty<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
           <button class="themeOpt" data-theme-val="naruto"    role="menuitemradio"><span class="tsw" style="--sw:#ff7a18">🍥</span>Naruto<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg></span></button>
         </div>
       </div>
@@ -158,6 +168,10 @@
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Od&#347;wie&#380;
         </button>
+        <button class="railBtn ghost" id="btnResetStorage" type="button" title="Zresetuj ulubione, g&#322;o&#347;no&#347;&#263; i zapami&#281;tane ustawienia">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M9 7V5h6v2m-8 0l1 13h8l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Resetuj
+        </button>
       </div>
     </aside>
 
@@ -167,7 +181,7 @@
         <span>Stacje · <span id="countInfo">0 / 0</span></span>
         <span id="listHint">dwuklik = uruchom</span>
       </div>
-      <div id="stationList" tabindex="0"></div>
+      <div id="stationList" tabindex="0" role="listbox" aria-label="Lista stacji radiowych"></div>
     </section>
 
     <!-- PRAWY PANEL: TERAZ GRA + GLOBUS -->
@@ -209,7 +223,7 @@
       <div class="mpArt paused" id="mpArt">
         <div class="mpEq"><span></span><span></span><span></span></div>
       </div>
-      <div class="pbText">
+      <div class="pbText" aria-live="polite">
         <div class="mpName" id="mpName">Wybierz stację</div>
         <div class="mpMeta" id="mpMeta">—</div>
       </div>
@@ -235,7 +249,7 @@
         <path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/>
         <path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
       </svg>
-      <input type="range" class="volSlider" id="volSlider" min="0" max="100" value="65" step="1" />
+      <input type="range" class="volSlider" id="volSlider" min="0" max="100" value="65" step="1" aria-label="Głośność" />
       <span class="volLabel" id="volLabel">65%</span>
     </div>
   </div>

@@ -51,6 +51,22 @@
     }
     function rnd(a, b) { return a + Math.random() * (b - a); }
 
+    /* Pre-renderowany sprite miękkiej świecącej kuli (offscreen canvas).
+       Tworzony RAZ w seed() zamiast createRadialGradient per cząsteczka
+       per klatkę — w pętli wystarczy drawImage + globalAlpha.
+       bokeh=true → jaśniejszy rdzeń (dwustopniowy gradient). */
+    function makeSprite(col, bokeh) {
+      var c = document.createElement("canvas"), SZ = 64, R = SZ / 2;
+      c.width = SZ; c.height = SZ;
+      var sc = c.getContext("2d");
+      var g = sc.createRadialGradient(R, R, 0, R, R, R);
+      g.addColorStop(0, "rgba(" + col + ",1)");
+      if (bokeh) g.addColorStop(0.7, "rgba(" + col + ",0.4)");
+      g.addColorStop(1, "rgba(" + col + ",0)");
+      sc.fillStyle = g; sc.fillRect(0, 0, SZ, SZ);
+      return c;
+    }
+
     /* Stan pojedynczego trybu — własne cząsteczki, by dwa tryby
        mogły grać jednocześnie podczas crossfade. */
     function makeState(m) {
@@ -75,20 +91,16 @@
       } else if (m === "snow") {
         s.trail = 0; n = Math.max(30, Math.round(W / 14));
         for (i = 0; i < n; i++) s.parts.push({ x: Math.random() * W, y: Math.random() * H, r: rnd(1, 3.4), vy: rnd(18, 55), ph: rnd(0, 6.28), sw: rnd(8, 26) });
-      } else if (m === "embers") {
-        s.trail = 0.12; n = Math.max(20, Math.round(W / 26));
-        for (i = 0; i < n; i++) s.parts.push(ember(true));
       } else if (m === "stars") {
         s.trail = 0.06; n = Math.max(40, Math.round(W / 10));
         for (i = 0; i < n; i++) s.parts.push({ x: Math.random() * W, y: Math.random() * H, r: rnd(0.4, 1.8), vx: rnd(-6, -1), ph: rnd(0, 6.28), tw: rnd(1, 2.4) });
-      } else if (m === "dust") {
-        s.trail = 0; n = Math.max(24, Math.round(W / 34));
-        for (i = 0; i < n; i++) s.parts.push({ x: Math.random() * W, y: Math.random() * H, r: rnd(0.8, 2.6), vx: rnd(-7, 7), vy: rnd(-14, -4), ph: rnd(0, 6.28), a: rnd(0.15, 0.5) });
       } else if (m === "petals") {
         s.trail = 0; n = Math.max(16, Math.round(W / 44));
+        s.sprite = makeSprite(s.rainRGB, false);
         for (i = 0; i < n; i++) s.parts.push({ x: Math.random() * W, y: Math.random() * H, r: rnd(7, 20), vy: rnd(20, 46), vx: rnd(-10, 10), ph: rnd(0, 6.28), sw: rnd(14, 34), a: rnd(0.1, 0.26) });
       } else if (m === "bokeh") {
         s.trail = 0; n = Math.max(20, Math.round(W / 40));
+        s.sprite = makeSprite(s.rainRGB, true);
         for (i = 0; i < n; i++) s.parts.push({ x: Math.random() * W, y: Math.random() * H, r: rnd(8, 34), vy: rnd(-30, -8), vx: rnd(-9, 9), ph: rnd(0, 6.28), sw: rnd(10, 26), a: rnd(0.07, 0.2) });
       } else if (m === "grid") {
         s.trail = 0;
@@ -100,9 +112,6 @@
     function emoji(m, spread) {
       var set = (m === "cats") ? CATS : LEAVES;
       return { x: Math.random() * W, y: spread ? rnd(-H, H) : rnd(-H, -20), sz: rnd(16, 30), vy: rnd(40, 95), vx: rnd(-18, 18), rot: rnd(0, 6.28), vr: rnd(-1.4, 1.4), ch: set[(Math.random() * set.length) | 0], ph: rnd(0, 6.28) };
-    }
-    function ember(anywhere) {
-      return { x: Math.random() * W, y: anywhere ? Math.random() * H : H + 10, r: rnd(1, 2.8), vy: rnd(-46, -16), vx: rnd(-10, 10), life: rnd(0.5, 1), fl: rnd(0, 6.28) };
     }
 
     function frame(t2) {
@@ -119,7 +128,7 @@
         drawLayer(cur, dt, fade);
         if (fade >= 1) prev = null;
       } else {
-        /* normalnie: smużenie (matrix/embers/stars) lub czyszczenie */
+        /* normalnie: smużenie (matrix/stars) lub czyszczenie */
         if (cur.trail > 0) { ctx.fillStyle = "rgba(0,0,0," + cur.trail + ")"; ctx.fillRect(0, 0, W, H); }
         else ctx.clearRect(0, 0, W, H);
         drawLayer(cur, dt, 1);
@@ -132,9 +141,7 @@
       if (m === "matrix") drawMatrix(s, dt, A);
       else if (m === "cats" || m === "leaves") drawEmoji(s, dt, A);
       else if (m === "snow") drawSnow(s, dt, A);
-      else if (m === "embers") drawEmbers(s, dt, A);
       else if (m === "stars") drawStars(s, dt, A);
-      else if (m === "dust") drawDust(s, dt, A);
       else if (m === "petals") drawPetals(s, dt, A);
       else if (m === "bokeh") drawBokeh(s, dt, A);
       else if (m === "grid") drawGrid(s, dt, A);
@@ -148,10 +155,9 @@
         var ch = MATRIX_G[(Math.random() * MATRIX_G.length) | 0];
         var x = i * FS, y = drops[i] * FS;
         if (y > 0) {
-          if (Math.random() > 0.86) { ctx.fillStyle = "#d6ffe0"; ctx.shadowColor = col; ctx.shadowBlur = 8; }
-          else { ctx.fillStyle = col; ctx.shadowBlur = 0; }
+          /* jaśniejszy kolor zamiast kosztownego shadowBlur */
+          ctx.fillStyle = Math.random() > 0.86 ? "#d6ffe0" : col;
           ctx.fillText(ch, x, y);
-          ctx.shadowBlur = 0;
         }
         if (y > H && Math.random() > 0.975) drops[i] = Math.random() * -20;
         drops[i] += 0.5 + Math.random() * 0.55;
@@ -186,20 +192,6 @@
       ctx.globalAlpha = 1;
     }
 
-    function drawEmbers(s, dt, A) {
-      var parts = s.parts, base = s.rainRGB;
-      for (var i = 0; i < parts.length; i++) {
-        var p = parts[i];
-        p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 2 + p.fl) * 8) * dt; p.life -= dt * 0.32;
-        if (p.life <= 0 || p.y < -10) { parts[i] = ember(false); continue; }
-        var fl = 0.6 + 0.4 * Math.sin(t * 8 + p.fl);
-        ctx.globalAlpha = Math.max(0, p.life) * fl * A;
-        ctx.fillStyle = "rgb(" + base + ")"; ctx.shadowColor = "rgb(" + base + ")"; ctx.shadowBlur = 10;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
-      }
-      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-    }
-
     function drawStars(s, dt, A) {
       var parts = s.parts, col = s.rainRGB;
       for (var i = 0; i < parts.length; i++) {
@@ -226,48 +218,29 @@
       }
     }
 
-    function drawDust(s, dt, A) {
-      var parts = s.parts, col = s.rainRGB;
-      for (var i = 0; i < parts.length; i++) {
-        var p = parts[i];
-        p.x += (p.vx + Math.sin(t * 0.5 + p.ph) * 6) * dt; p.y += p.vy * dt;
-        if (p.y < -6) { p.y = H + 6; p.x = Math.random() * W; }
-        if (p.x < -6) p.x = W + 6; if (p.x > W + 6) p.x = -6;
-        ctx.globalAlpha = p.a * (0.6 + 0.4 * Math.sin(t + p.ph)) * A;
-        ctx.fillStyle = "rgb(" + col + ")"; ctx.shadowColor = "rgb(" + col + ")"; ctx.shadowBlur = 6;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
-      }
-      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-    }
-
     function drawPetals(s, dt, A) {
-      var parts = s.parts, col = s.rainRGB;
+      var parts = s.parts, spr = s.sprite;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 0.7 + p.ph) * p.sw) * dt; p.ph += dt * 0.6;
         if (p.y > H + 24) { p.y = -24; p.x = Math.random() * W; }
-        var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-        g.addColorStop(0, "rgba(" + col + "," + ((p.a + 0.06) * A) + ")");
-        g.addColorStop(1, "rgba(" + col + ",0)");
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+        ctx.globalAlpha = (p.a + 0.06) * A;
+        ctx.drawImage(spr, p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
       }
+      ctx.globalAlpha = 1;
     }
 
     function drawBokeh(s, dt, A) {
-      var parts = s.parts, col = s.rainRGB;
+      var parts = s.parts, spr = s.sprite;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 0.5 + p.ph) * p.sw) * dt; p.ph += dt * 0.4;
         if (p.y < -36) { p.y = H + 36; p.x = Math.random() * W; }
         var pulse = 0.7 + 0.3 * Math.sin(t * 1.2 + p.ph);
-        var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-        g.addColorStop(0, "rgba(" + col + "," + ((p.a * pulse + 0.05) * A) + ")");
-        g.addColorStop(0.7, "rgba(" + col + "," + (p.a * pulse * 0.4 * A) + ")");
-        g.addColorStop(1, "rgba(" + col + ",0)");
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+        ctx.globalAlpha = (p.a * pulse + 0.05) * A;
+        ctx.drawImage(spr, p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
       }
+      ctx.globalAlpha = 1;
     }
 
     function drawGrid(s, dt, A) {

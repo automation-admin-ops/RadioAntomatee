@@ -84,12 +84,6 @@ var CURATED = [
   { name: "SomaFM Folk Forward",        url: "https://ice1.somafm.com/folkfwd-128-mp3",          genre: "Folk" }
 ];
 
-/* Zepsute stacje wygasają po 24 h. */
-var BROKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
-
-/* Okres karencji zanim stacja zostanie oznaczona jako zepsuta. */
-var BROKEN_GRACE_MS = 3500;
-
 /* Cache listy stacji — aplikacja startuje natychmiast, odświeża w tle. */
 var STATION_CACHE_KEY = "radioantomatee-stations-v3";
 try { localStorage.removeItem("radioantomatee-stations-v2"); } catch(e){}
@@ -104,9 +98,6 @@ var state = {
   volume: 65, lastVolume: 65,
   filters: { q: "", country: "", genre: "", onlyFav: false, onlyClub: false, onlyPL: false, sort: "name" },
   connectTimer: null, connectToken: 0,
-  brokenStations: {},
-  pendingBrokenId: null,
-  pendingBrokenTimer: null,
   refreshing: false
 };
 
@@ -145,7 +136,7 @@ function stopEvt(e){ if(e.preventDefault)e.preventDefault(); if(e.stopPropagatio
 function clamp(n,mn,mx){ n=parseInt(n,10); if(isNaN(n))n=mn; return n<mn?mn:n>mx?mx:n; }
 function trim(s){ return ("" + (s==null?"":s)).replace(/^\s+|\s+$/g,""); }
 function lower(s){ return trim(s).toLowerCase(); }
-function safeText(s){ return ("" + (s==null?"":s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function safeText(s){ return ("" + (s==null?"":s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function isMobile(){ return window.innerWidth < 761; }
 function nfmt(n){ try { return (+n).toLocaleString("pl-PL"); } catch(e){ return "" + n; } }
 function uniqSort(arr){
@@ -255,7 +246,9 @@ function normalizeStation(s){
     name: name,
     genre: genre,
     country: cc,
-    bitrate: s.bitrate || 0,
+    /* koercja do liczby — bitrate z publicznego API to dane niezaufane,
+       a trafia do innerHTML; string mógłby przemycić HTML (XSS) */
+    bitrate: (parseInt(s.bitrate, 10) > 0 ? parseInt(s.bitrate, 10) : 0),
     featured: FEATURED_RE.test(name),
     club: CLUB_RE.test(haystack)
   };
@@ -342,10 +335,14 @@ function loadConfig(){
   try {
     var raw = localStorage.getItem(STORAGE_KEY); if(!raw) return;
     var cfg = JSON.parse(raw);
-    if(cfg.volume   != null) state.volume = clamp(cfg.volume,0,100);
+    if (!cfg || typeof cfg !== "object") return;
+    if(cfg.volume   != null) state.volume = clamp(+cfg.volume || 0, 0, 100);
     if(cfg.activeId)         state.activeId = "" + cfg.activeId;
-    if(cfg.favorites)        state.favorites = cfg.favorites;
-    if(cfg.sort)             state.filters.sort = "" + cfg.sort;
+    /* walidacja kształtu — uszkodzony/zmanipulowany zapis nie może
+       podmienić favorites na tablicę/string i wysypać reszty logiki */
+    if(cfg.favorites && typeof cfg.favorites === "object" && !Array.isArray(cfg.favorites))
+      state.favorites = cfg.favorites;
+    if(typeof cfg.sort === "string") state.filters.sort = cfg.sort;
   } catch(e){}
 }
 var _saveT = null;
@@ -362,26 +359,10 @@ function saveConfig(){
   } catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════
-   AUTO-BLOKOWANIE STACJI — USUNIĘTE
-   Stacje pochodzą z Radio Browser API filtrowanego po
-   lastcheckok=1 & hidebroken=true (serwer sam sprawdza, czy grają)
-   oraz z listy kuratorowanej (zweryfikowane, stabilne streamy).
-   Aplikacja niczego nie ukrywa ani nie blokuje — gdy stream chwilowo
-   nie odpowiada, pokazuje jedynie status błędu, a stacja zostaje na
-   liście. Poniżej bezpieczne zaślepki dla zgodności wywołań.
-══════════════════════════════════════════════════════════ */
-function pruneBrokenStations(){}
-function isBroken(id){ return false; }
-function markStationBroken(id){}
-function cancelPendingBroken(){}
-function schedulePendingBroken(stationId){}
-function brokenCount(){ return 0; }
-function clearBrokenStations(){}
-function updateBrokenBadge(){
-  var el = $("brokenBadge");
-  if (el) el.style.display = "none";
-}
+/* Uwaga: dawne auto-blokowanie stacji usunięto w całości — stacje
+   pochodzą z Radio Browser API (lastcheckok=1 & hidebroken=true, serwer
+   sam weryfikuje że grają) + kuratorowanej listy SomaFM. Gdy stream
+   chwilowo nie odpowiada, aplikacja pokazuje tylko status błędu. */
 
 /* ══════════════════════════════════════════════════════════
    GŁOŚNOŚĆ
@@ -432,19 +413,14 @@ var ICON_PLAY  = '<path d="M7 5l12 7-12 7V5z"/>';
 var ICON_PAUSE = '<rect x="6" y="5" width="4.5" height="14" rx="1"/><rect x="13.5" y="5" width="4.5" height="14" rx="1"/>';
 
 function updatePlayButton(ps){
-  var playing = (ps===3||ps===6||ps===9||ps===11);
+  var playing = (ps===3||ps===6||ps===11);
 
   var btn = $("btnPlay");
   var icon = $("btnPlayIcon");
   btn.classList.toggle("playing", playing);
   icon.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
   btn.title = playing ? "Pauza (spacja)" : "Graj (spacja)";
-
-  var mbp = $("mpPlay"); var mbi = $("mpPlayIcon");
-  if (mbp) {
-    mbp.classList.toggle("playing", playing);
-    if(mbi) mbi.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
-  }
+  btn.setAttribute("aria-label", playing ? "Pauza" : "Graj");
 
   var npEq  = $("npEq"); if(npEq)  npEq.classList.toggle("paused", !playing);
   var mpArt = $("mpArt"); if(mpArt) mpArt.classList.toggle("paused", !playing);
@@ -576,6 +552,12 @@ function renderFilterOptions(){
   selC.options[0] = new Option("Kraj: wszystkie", "");
   ccList.forEach(function(o){ selC.options[selC.length] = new Option(o.label, o.cc); });
   selC.value = state.filters.country || "";
+  /* filtr wskazuje kraj, którego nie ma już w nowej liście — wyzeruj,
+     inaczej select pokazuje pustkę, a niewidoczny filtr dalej tnie listę */
+  if (selC.value !== (state.filters.country || "")) {
+    state.filters.country = "";
+    selC.value = "";
+  }
 
   var selG = $("filterGenre");
   var genres = uniqSort(gc);
@@ -583,8 +565,13 @@ function renderFilterOptions(){
   selG.options[0] = new Option("Gatunek: wszystkie", "");
   genres.forEach(function(v){ selG.options[selG.length] = new Option(v, v); });
   selG.value = state.filters.genre || "";
+  if (selG.value !== (state.filters.genre || "")) {
+    state.filters.genre = "";
+    selG.value = "";
+  }
 
   $("sortMode").value = state.filters.sort;
+  if (window._updateFilterBadge) window._updateFilterBadge();
 }
 
 function sortView(list){
@@ -646,7 +633,12 @@ function rowClass(idx, st){
 }
 function updateRowClasses(){
   for (var i=0;i<rowEls.length;i++)
-    if (rowEls[i]) rowEls[i].className = rowClass(i, state.view[i]);
+    if (rowEls[i]) {
+      rowEls[i].className = rowClass(i, state.view[i]);
+      rowEls[i].setAttribute("aria-selected", i === state.selectedIndex ? "true" : "false");
+    }
+  var list = $("stationList");
+  if (list) list.setAttribute("aria-activedescendant", "strow-" + state.selectedIndex);
 }
 function rebindRowEls(){
   var list = $("stationList");
@@ -655,6 +647,24 @@ function rebindRowEls(){
     var idx = parseInt(n.getAttribute("data-index"), 10);
     if (!isNaN(idx)) rowEls[idx] = n;
   });
+}
+
+/* Punktowa podmiana jednego wiersza (gwiazdka, equalizer aktywnej
+   stacji) — bez niszczenia i odtwarzania całej ~500-elementowej siatki */
+function patchRow(idx){
+  var el = rowEls[idx], st = state.view[idx];
+  if (!el || !st) return;
+  var tmp = document.createElement("div");
+  tmp.innerHTML = buildRowHtml(st, idx);
+  var fresh = tmp.firstChild;
+  el.parentNode.replaceChild(fresh, el);
+  rowEls[idx] = fresh;
+}
+function indexOfStationId(id){
+  if (!id) return -1;
+  for (var i = 0; i < state.view.length; i++)
+    if (state.view[i].id === id) return i;
+  return -1;
 }
 
 function stationInitial(name){
@@ -666,7 +676,9 @@ function buildRowHtml(st, i){
   var fav    = !!state.favorites[st.id];
   var active = (st.id === state.activeId);
   var playing = (audioState===3||audioState===6||audioState===11);
-  return '<div class="' + rowClass(i, st) + '" data-row="1" data-index="' + i + '">' +
+  var kbps   = +st.bitrate || 0;   /* defensywnie: zawsze liczba w HTML */
+  return '<div class="' + rowClass(i, st) + '" data-row="1" data-index="' + i + '"' +
+      ' role="option" id="strow-' + i + '" aria-selected="' + (i === state.selectedIndex ? 'true' : 'false') + '">' +
     '<div class="rowArt">' +
       '<span class="rowArtInitial">' + stationInitial(st.name) + '</span>' +
       (active ? '<div class="rowArtEq miniEq' + (playing ? '' : ' paused') + '"><span></span><span></span><span></span></div>' : '') +
@@ -683,8 +695,10 @@ function buildRowHtml(st, i){
       '</div>' +
     '</div>' +
     '<div class="rowMeta">' +
-      (st.bitrate ? '<span class="rowKbps">' + st.bitrate + 'k</span>' : '') +
-      '<span class="rowStar' + (fav ? ' starFav' : '') + '" data-action="fav" title="Ulubione">' + (fav ? '★' : '☆') + '</span>' +
+      (kbps ? '<span class="rowKbps">' + kbps + 'k</span>' : '') +
+      '<button type="button" class="rowStar' + (fav ? ' starFav' : '') + '" data-action="fav"' +
+        ' aria-pressed="' + (fav ? 'true' : 'false') + '"' +
+        ' aria-label="Ulubione: ' + safeText(st.name) + '" title="Ulubione">' + (fav ? '★' : '☆') + '</button>' +
     '</div>' +
   '</div>';
 }
@@ -707,7 +721,6 @@ function renderList(){
         '</div>' +
         'Brak stacji pasujących do filtrów' +
       '</div>';
-    updateBrokenBadge();
     return;
   }
 
@@ -719,24 +732,27 @@ function renderList(){
     list.innerHTML = html.join("");
     list.scrollTop = prev;
     rebindRowEls();
-    updateBrokenBadge();
     return;
   }
 
-  /* pierwsza porcja natychmiast, reszta w kolejnych klatkach */
+  /* pierwsza porcja natychmiast, reszta w kolejnych klatkach;
+     rebind i finalne przywrócenie scrolla dopiero PO ostatniej porcji
+     (rebind per porcja = O(n²), a scroll ustawiony za wcześnie ucinał
+     się do wysokości pierwszej porcji) */
   list.innerHTML = html.slice(0, CHUNK).join("");
   list.scrollTop = prev;
-  rebindRowEls();
   var i = CHUNK;
   (function step(){
     if (token !== _renderToken) return; /* nowy render unieważnia ten */
-    if (i >= html.length) { rebindRowEls(); updateBrokenBadge(); return; }
+    if (i >= html.length) {
+      rebindRowEls();
+      if (prev > list.scrollTop) list.scrollTop = prev;
+      return;
+    }
     list.insertAdjacentHTML("beforeend", html.slice(i, i + CHUNK).join(""));
     i += CHUNK;
-    rebindRowEls();
     requestAnimationFrame(step);
   })();
-  updateBrokenBadge();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -764,9 +780,8 @@ function armConnectTimer(){
     if (tok !== state.connectToken) return;
     if (audioState !== 3) {
       audioState = 1;
-      setStatus("bad", "Nie udało się połączyć");
+      setStatus("bad", navigator.onLine ? "Nie udało się połączyć" : "Brak połączenia z internetem");
       updatePlayButton(1);
-      if (state.activeId) schedulePendingBroken(state.activeId);
     }
   }, 15000);
 }
@@ -774,9 +789,18 @@ function armConnectTimer(){
 /* ══════════════════════════════════════════════════════════
    ODTWARZANIE
 ══════════════════════════════════════════════════════════ */
+/* Token generacji odtwarzania — każde playUrl/stop go inkrementuje.
+   Asynchroniczne odrzucenie play() STAREJ stacji (AbortError przy
+   przełączaniu A→B) niesie stary token i jest ignorowane — nie kasuje
+   watchdoga ani statusu łączenia NOWEJ stacji. */
+var _playToken = 0;
+
 function playUrl(url){
   try {
     var a = getPlayer(); _stopping = false; destroyHls();
+    _playToken++;
+    var tok = _playToken;
+    var stale = function(){ return _stopping || tok !== _playToken; };
     var isHls = /\.m3u8/i.test(url);
 
     if (isHls) {
@@ -785,19 +809,22 @@ function playUrl(url){
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(a);
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, function(){
-          if (_stopping) return; applyVolume();
+          if (stale()) return; applyVolume();
           var p = a.play();
-          if (p && p.catch) p.catch(function(){ if (!_stopping) onPlayerError(); });
+          if (p && p.catch) p.catch(function(){ if (!stale()) onPlayerError(); });
         });
         hlsInstance.on(Hls.Events.ERROR, function(ev, d){
-          if (d.fatal && !_stopping) onPlayerError();
+          if (d.fatal && !stale()) onPlayerError();
         });
         return true;
       } else if (a.canPlayType("application/vnd.apple.mpegurl")) {
         a.src = url; applyVolume();
         var p2 = a.play();
-        if (p2 && p2.catch) p2.catch(function(){ if (!_stopping) onPlayerError(); });
+        if (p2 && p2.catch) p2.catch(function(){ if (!stale()) onPlayerError(); });
         return true;
+      } else if (typeof Hls === "undefined") {
+        setStatus("bad", "Nie udało się załadować odtwarzacza HLS (brak sieci?)");
+        return false;
       } else {
         setStatus("bad", "HLS nieobsługiwany");
         return false;
@@ -806,7 +833,7 @@ function playUrl(url){
 
     a.src = url; applyVolume();
     var p3 = a.play();
-    if (p3 && p3.catch) p3.catch(function(){ if (!_stopping) onPlayerError(); });
+    if (p3 && p3.catch) p3.catch(function(){ if (!stale()) onPlayerError(); });
     return true;
   } catch(e){ return false; }
 }
@@ -820,8 +847,12 @@ function playStation(st){
     return;
   }
 
-  cancelPendingBroken();
+  if (!navigator.onLine) {
+    setStatus("bad", "Brak połączenia z internetem");
+    return;
+  }
 
+  var prevActive = indexOfStationId(state.activeId);
   state.activeId = st.id;
   saveConfig();
   setNowPlaying(st);
@@ -834,7 +865,9 @@ function playStation(st){
     return;
   }
   armConnectTimer();
-  renderList();
+  /* punktowo: stary aktywny wiersz traci equalizer, nowy go dostaje */
+  if (prevActive >= 0) patchRow(prevActive);
+  patchRow(indexOfStationId(st.id));
 }
 
 function playSelected(){ var st = getSelectedStation(); if (st) playStation(st); }
@@ -846,7 +879,6 @@ function resumeActiveStation(){
   var st = getActiveStation();
   if (!st) { playSelected(); return; }
   _stopping = false;
-  cancelPendingBroken();
   setStatus("warn", "Łączenie…");
   audioState = 6;
   updatePlayButton(6);
@@ -861,7 +893,7 @@ function togglePlayPause(){
   if (!state.activeId) { playSelected(); return; }
   var a = getPlayer();
 
-  if (audioState===3 || audioState===6 || audioState===9 || audioState===11) {
+  if (audioState===3 || audioState===6 || audioState===11) {
     _stopping = false; a.pause(); return;
   }
 
@@ -870,21 +902,31 @@ function togglePlayPause(){
 
 function stopPlayback(){
   stopConnectTimer();
-  cancelPendingBroken();
   _stopping = true;
+  _playToken++;               /* unieważnij wiszące promisy play() */
   destroyHls();
   try {
     var a = getPlayer();
     a.pause(); a.removeAttribute("src"); a.load();
   } catch(e){}
-  audioState = 1; _stopping = false;
+  /* _stopping zostaje true aż do następnego playUrl — asynchroniczne
+     odrzucenie przerwanego play() nie pokaże fałszywego "Błąd" po Stop */
+  audioState = 1;
   setStatus("", "Zatrzymane");
   updatePlayButton(1);
 }
 
 function nextPrev(dir){
   if (!state.view.length) return;
-  var idx = state.selectedIndex + dir;
+  /* nawiguj względem GRAJĄCEJ stacji (jeśli jest na liście) — z ekranu
+     blokady "następna" ma znaczyć następną po tej, która gra, a nie po
+     przypadkowym zaznaczeniu sprzed godziny */
+  var base = state.selectedIndex;
+  if (state.activeId) {
+    var ai = indexOfStationId(state.activeId);
+    if (ai >= 0) base = ai;
+  }
+  var idx = base + dir;
   if (idx < 0) idx = state.view.length - 1;
   if (idx >= state.view.length) idx = 0;
   state.selectedIndex = idx;
@@ -899,7 +941,9 @@ function toggleFavorite(id){
   if (state.favorites[id]) delete state.favorites[id];
   else state.favorites[id] = 1;
   saveConfig();
-  renderList();
+  /* pełny rerender tylko gdy ulubione wpływają na skład/kolejność listy */
+  if (state.filters.onlyFav || state.filters.sort === "fav") { renderList(); return; }
+  patchRow(indexOfStationId(id));
 }
 
 function clearFilters(){
@@ -918,6 +962,7 @@ function clearFilters(){
   $("onlyPLChip").classList.remove("active");
   state.selectedIndex = 0;
   renderList();
+  if (window._updateFilterBadge) window._updateFilterBadge();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -925,10 +970,7 @@ function clearFilters(){
 ══════════════════════════════════════════════════════════ */
 function onPlayStateChange(ns){
   stopConnectTimer();
-  if (ns === 3) {
-    setStatus("ok", "Na żywo");
-    cancelPendingBroken();
-  }
+  if (ns === 3) setStatus("ok", "Na żywo");
   else if (ns === 2)  setStatus("warn", "Wstrzymano");
   else if (ns === 6 || ns === 11) { setStatus("warn", "Buforowanie…"); armConnectTimer(); }
   else if (ns === 1)  setStatus("", "Zatrzymane");
@@ -943,9 +985,8 @@ function onPlayerError(){
   if (errCode === 1) return;
 
   audioState = 1;
-  setStatus("bad", "Błąd · Stream niedostępny");
+  setStatus("bad", navigator.onLine ? "Błąd · Stream niedostępny" : "Brak połączenia z internetem");
   updatePlayButton(1);
-  if (state.activeId) schedulePendingBroken(state.activeId);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -998,8 +1039,13 @@ function mergeCurated(list){
 }
 
 function adoptStations(stations){
-  /* odsiej śmieciowe nazwy także z cache (starsze wersje listy) */
-  stations = (stations || []).filter(function(s){ return s && s.name && !isJunkName(s.name); });
+  /* walidacja także danych z cache localStorage: śmieciowe nazwy,
+     wyłącznie https:// (jak w normalizeStation) i liczbowy bitrate —
+     zmanipulowany/staroformatowy cache nie ominie zabezpieczeń */
+  stations = (stations || []).filter(function(s){
+    return s && s.name && !isJunkName(s.name) && /^https:\/\//i.test(s.url || "");
+  });
+  stations.forEach(function(s){ s.bitrate = (parseInt(s.bitrate, 10) > 0 ? parseInt(s.bitrate, 10) : 0); });
   /* zawsze dołóż pewne, kuratorowane stacje */
   stations = mergeCurated(stations);
   state.stations = stations;
@@ -1019,7 +1065,6 @@ function adoptStations(stations){
   }
 
   renderList();
-  updateBrokenBadge();
   updateGlobeCountries();
   updateStats();
 }
@@ -1098,9 +1143,6 @@ function bindUi(){
   bind($("volSlider"), "input", function(){ setVolume(+$("volSlider").value); });
   bind($("volIcon"),   "click", toggleMute);
 
-  bind($("mpPlay"), "click", togglePlayPause);
-  bind($("mpPrev"), "click", function(){ nextPrev(-1); });
-  bind($("mpNext"), "click", function(){ nextPrev(1);  });
 
   bind($("stationList"), "click", function(e){
     var t = e.target, row = resolveRow(t), idx;
@@ -1113,7 +1155,9 @@ function bindUi(){
     }
     state.selectedIndex = idx;
     updateRowClasses();
-    if (isMobile()) playSelected();
+    /* na dotyku (także tablet/laptop dotykowy >760px) dwuklik nie
+       istnieje — pojedyncze tapnięcie uruchamia stację */
+    if (isMobile() || e.pointerType === "touch") playSelected();
   });
   bind($("stationList"), "dblclick", function(e){
     if (isMobile()) return;
@@ -1134,6 +1178,19 @@ function bindUi(){
     var typing = (tag === "input" || tag === "textarea" || tag === "select");
     var st;
     if (typing) { if (key === 27) { src.blur(); return stopEvt(e); } return; }
+    /* nie przechwytuj skrótów systemowych (Ctrl+F, Alt+←, Cmd+…) */
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    /* fokus na elemencie interaktywnym (przycisk, link, menu motywów):
+       Enter/Spacja muszą aktywować TEN element, a nie globalny skrót —
+       inaczej cały UI jest nieobsługiwalny klawiaturą (WCAG 2.1.1) */
+    if (src && src.closest && src.closest("button, a, [role='menu']")) {
+      if (key === 27) {
+        var tm = $("themeMenu");
+        if (tm && !tm.hidden) return;      /* menu samo się zamknie */
+        clearFilters(); return stopEvt(e);
+      }
+      return;
+    }
     if (key === 32) { togglePlayPause(); return stopEvt(e); }
     if (key === 13) { playSelected();    return stopEvt(e); }
     if (key === 83) { $("search").focus(); return stopEvt(e); }
@@ -1143,11 +1200,31 @@ function bindUi(){
     if (key === 39) { nextPrev(1);  return stopEvt(e); }
     if (key === 77) { toggleMute(); return stopEvt(e); }
     if (key === 70) { st = getSelectedStation(); if (st) toggleFavorite(st.id); }
-    if (key === 27) { clearFilters(); return stopEvt(e); }
+    if (key === 27) {
+      var tm2 = $("themeMenu");
+      if (tm2 && !tm2.hidden) return;      /* Escape zamyka menu, nie filtry */
+      clearFilters(); return stopEvt(e);
+    }
   });
 
+  /* resize zmienia tylko tekst podpowiedzi — pełny rerender listy
+     ~500 kart przy każdej zmianie rozmiaru okna był zbędny */
   var _rt = null;
-  window.addEventListener("resize", function(){ clearTimeout(_rt); _rt = setTimeout(renderList, 200); });
+  window.addEventListener("resize", function(){
+    clearTimeout(_rt);
+    _rt = setTimeout(function(){
+      var h = $("listHint");
+      if (h) h.textContent = isMobile() ? "klik = uruchom" : "dwuklik = uruchom";
+    }, 200);
+  });
+
+  /* stan sieci — jasny komunikat zamiast 15-sekundowego timeoutu */
+  window.addEventListener("offline", function(){
+    setStatus("bad", "Brak połączenia z internetem");
+  });
+  window.addEventListener("online", function(){
+    setStatus("ok", "Połączenie przywrócone");
+  });
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1174,9 +1251,26 @@ window.addEventListener("DOMContentLoaded", async function(){
     globe.setTheme(document.documentElement.getAttribute("data-theme") || "green");
   } catch(e){ globe = null; }
 
-  /* Service Worker — aplikacja działa jako PWA i startuje błyskawicznie */
-  if ("serviceWorker" in navigator && location.protocol === "https:") {
-    try { navigator.serviceWorker.register("sw.js"); } catch(e){}
+  /* Service Worker — aplikacja działa jako PWA i startuje błyskawicznie
+     (także na localhost, żeby dało się testować lokalnie) */
+  var swOk = location.protocol === "https:" ||
+             location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  if ("serviceWorker" in navigator && swOk) {
+    try {
+      navigator.serviceWorker.register("sw.js").then(function(reg){
+        /* SWR serwuje starą wersję do następnej wizyty — przynajmniej
+           powiedz użytkownikowi, że nowa czeka po odświeżeniu */
+        reg.addEventListener("updatefound", function(){
+          var w = reg.installing;
+          if (!w) return;
+          w.addEventListener("statechange", function(){
+            if (w.state === "installed" && navigator.serviceWorker.controller) {
+              setStatus("ok", "Nowa wersja gotowa — odśwież stronę");
+            }
+          });
+        });
+      }).catch(function(){});
+    } catch(e){}
   }
 
   /* 1) Najpierw cache — natychmiastowy start */
@@ -1341,6 +1435,9 @@ window.addEventListener("DOMContentLoaded", async function(){
     var n = countActiveFilters();
     if (n > 0) { b.textContent = n; b.hidden = false; } else { b.hidden = true; }
   }
+  /* udostępnij poza IIFE — clearFilters/renderFilterOptions odświeżają
+     odznakę po programowej zmianie filtrów (brak zdarzeń change) */
+  window._updateFilterBadge = updateFilterBadge;
 
   window.addEventListener("DOMContentLoaded", function () {
     /* — menu wyboru motywu — */
