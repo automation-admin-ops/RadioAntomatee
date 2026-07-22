@@ -6,7 +6,7 @@
    cache'owane — zawsze lecą prosto do sieci.
 ════════════════════════════════════════════════════════════ */
 
-var CACHE_NAME = "antomatee-v14";
+var CACHE_NAME = "antomatee-v15";
 var FONT_CACHE = "antomatee-fonts-v1";
 
 var PRECACHE = [

@@ -44,7 +44,9 @@ module.exports = async function handler(req, res) {
 
   var KEY = "presence:online";
   var now = Date.now();
-  var WINDOW = 60000;            // sesja „żywa" 60 s od ostatniego pulsu
+  var WINDOW = 150000;           // sesja „żywa" 150 s od ostatniego pulsu —
+                                 // toleruje dławienie kart w tle (~1 puls/min);
+                                 // zamknięcie karty i tak zdejmuje od razu (leave)
   var cutoff = now - WINDOW;
 
   // Rate-limit: STAŁE okno 60 s. SET..NX zakłada klucz z TTL tylko gdy go
