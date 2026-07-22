@@ -1,7 +1,7 @@
 {
   "name": "Radio Antomatee",
   "short_name": "Antomatee",
-  "description": "Internetowe radio — polskie i światowe stacje, klubowe, rave i nie tylko.",
+  "description": "Internetowe radio - polskie i światowe stacje, klubowe, rave i nie tylko.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

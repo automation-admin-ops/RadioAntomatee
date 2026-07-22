@@ -1,16 +1,16 @@
 /* ════════════════════════════════════════════════════════════
-   RADIO ANTOMATEE — rain.js  ·  Tło zależne od motywu
-   Jeden silnik cząsteczek na canvasie #rain, wiele trybów —
+   RADIO ANTOMATEE - rain.js  ·  Tło zależne od motywu
+   Jeden silnik cząsteczek na canvasie #rain, wiele trybów -
    każdy motyw ma WŁASNE, inne tło (nie deszcz kodu Matrix):
-     matrix  — opadający kod (zielony)      → motyw green
-     bokeh   — świecące bąbelki             → amber
-     snow    — padający śnieg                → cyan/lód
-     grid    — retro perspektywa + słońce    → synthwave
-     petals  — opadające płatki              → crimson
-     stars   — dryfujące gwiazdy + meteor    → violet
-     cats    — spadające kotki 🐱            → cats
-     leaves  — liście + wiry Uzumaki 🍥🌀    → naruto
-   Zmiana motywu NIE resetuje deszczu — stary tryb płynnie
+     matrix  - opadający kod (zielony)      → motyw green
+     bokeh   - świecące bąbelki             → amber
+     snow    - padający śnieg                → cyan/lód
+     grid    - retro perspektywa + słońce    → synthwave
+     petals  - opadające płatki              → crimson
+     stars   - dryfujące gwiazdy + meteor    → violet
+     cats    - spadające kotki 🐱            → cats
+     leaves  - liście + wiry Uzumaki 🍥🌀    → naruto
+   Zmiana motywu NIE resetuje deszczu - stary tryb płynnie
    wygasza się (cząsteczki lecą dalej), a nowy rozjaśnia się
    równolegle (crossfade), więc ikonki zmieniają się w locie.
    API: window.RadioBG.setMode(name). Sam startuje po DOM.
@@ -53,7 +53,7 @@
 
     /* Pre-renderowany sprite miękkiej świecącej kuli (offscreen canvas).
        Tworzony RAZ w seed() zamiast createRadialGradient per cząsteczka
-       per klatkę — w pętli wystarczy drawImage + globalAlpha.
+       per klatkę - w pętli wystarczy drawImage + globalAlpha.
        bokeh=true → jaśniejszy rdzeń (dwustopniowy gradient). */
     function makeSprite(col, bokeh) {
       var c = document.createElement("canvas"), SZ = 64, R = SZ / 2;
@@ -67,7 +67,7 @@
       return c;
     }
 
-    /* Stan pojedynczego trybu — własne cząsteczki, by dwa tryby
+    /* Stan pojedynczego trybu - własne cząsteczki, by dwa tryby
        mogły grać jednocześnie podczas crossfade. */
     function makeState(m) {
       return { mode: m, trail: 0, parts: [], drops: [], gridOff: 0, shoot: null, shootTimer: 3 };
@@ -75,7 +75,7 @@
 
     function seed(s) {
       s.parts = []; s.drops = []; s.gridOff = 0; s.shoot = null; s.shootTimer = 3;
-      /* zapamiętaj kolory MOTYWU w chwili tworzenia stanu — dzięki temu
+      /* zapamiętaj kolory MOTYWU w chwili tworzenia stanu - dzięki temu
          podczas zmiany motywu stary tryb zachowuje swoje kolory i płynnie
          zanika, a nowy pojawia się w nowych kolorach (bez przeskoku barwy) */
       s.rainHex = cssvar("--rain", "#00ff66");
@@ -257,13 +257,13 @@
       ctx.save();
       ctx.beginPath(); ctx.rect(0, hy, W, H - hy); ctx.clip();
       ctx.strokeStyle = "rgba(" + col + ",0.5)"; ctx.lineWidth = 1.4;
-      /* linie poziome — perspektywa */
+      /* linie poziome - perspektywa */
       for (var k = 0; k < 16; k++) {
         var f = (k + s.gridOff) / 16; var yy = hy + f * f * (H - hy);
         ctx.globalAlpha = (0.15 + 0.6 * f) * A;
         ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke();
       }
-      /* linie pionowe — zbieżne do punktu ucieczki */
+      /* linie pionowe - zbieżne do punktu ucieczki */
       ctx.globalAlpha = 0.4 * A;
       for (var j = -10; j <= 10; j++) {
         ctx.beginPath(); ctx.moveTo(vpx + j * (W / 8), H); ctx.lineTo(vpx + j * 6, hy); ctx.stroke();
@@ -308,7 +308,7 @@
         if (reduce) { ctx.clearRect(0, 0, W, H); return; }
         cancelAnimationFrame(raf); last = 0; raf = requestAnimationFrame(frame);
       },
-      /* Wstrzymanie/wznowienie — używane podczas View Transition, aby
+      /* Wstrzymanie/wznowienie - używane podczas View Transition, aby
          canvas nie ruszał się „pod maską" i nie było przeskoku pozycji
          przy odsłonięciu; crossfade trybu gra się na żywo po wznowieniu. */
       pause: function () { cancelAnimationFrame(raf); raf = 0; },

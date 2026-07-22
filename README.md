@@ -1,86 +1,80 @@
 # Radio Antomatee 📻🌍
 
-Internetowe radio — polskie i światowe stacje (klubowe, rave, techno, hardstyle, DnB i więcej) z obracającą się kulą ziemską pokazującą, skąd gra aktualna stacja.
+Radiowa aplikacja PWA (czysty JavaScript, bez build stepu) z polskimi i światowymi
+stacjami, czatem słuchaczy na żywo i licznikiem obecnych. Produkcja:
+**https://radio-antomatee.vercel.app/** (auto-deploy z gałęzi `main`).
 
-🔗 Demo: https://radio-antomatee.vercel.app/
+## Funkcje
 
-## Motywy (8 do wyboru, zapis w cookie)
+- **~460 stacji radiowych** - Radio Browser API (5 mirrorów, tylko stacje
+  zweryfikowane serwerowo: `lastcheckok=1 & hidebroken=true`) + 26 kuratorowanych
+  streamów SomaFM jako pewna baza; cache listy w localStorage (start natychmiast,
+  odświeżanie w tle)
+- **8 motywów** zapisywanych w cookie (`radioantomatee_theme`): Matrix (domyślny),
+  Kosmos, Bursztyn, Lód, Synthwave, Krwista, Koty, Naruto - każdy z własnym
+  animowanym tłem (rain.js) i stylem globusa; płynne przejścia motywów
+  (View Transitions + crossfade cząsteczek tła)
+- **Globus** (canvas 2D, bez bibliotek) - geografia z Natural Earth 50m
+  (~7000 punktów lądu, 241 krajów), rotacja do kraju grającej stacji,
+  style per motyw (fosfor / neon / realistyczna Ziemia / jasny atlas)
+- **Czat słuchaczy** - Firebase Realtime Database, wiadomości push przez
+  WebSocket (bez odpytywania); nick wymagany, max 100 znaków, 1 wiadomość/5 s,
+  widoczne max 50 wiadomości z ostatnich 10 minut
+- **Licznik słuchaczy** - Firebase presence (`onDisconnect`), liczy unikalnych
+  użytkowników, reaguje natychmiast na wejścia/wyjścia
+- **PWA** - service worker (stale-while-revalidate, precache całego shella,
+  cache fontów), działa offline (poza samymi streamami), instalowalna
+- **Dostępność** - pełna obsługa klawiatury (strzałki, Enter, spacja, F, M, S,
+  Esc), role ARIA (listbox, log, status), aria-live dla statusu i "Teraz gra",
+  kontrasty WCAG AA na wszystkich motywach
 
-Interfejs w stylu terminala: czerń + fosfor, kroje monospace (Share Tech Mono / JetBrains Mono), opadający kod w tle (canvas `#rain`) i delikatny efekt CRT. Przycisk „paleta" w nagłówku otwiera menu wyboru motywu:
-
-- **Matrix** (zielony, domyślny) · **Bursztyn** · **Lód** (cyan) · **Synthwave** (magenta) · **Krwista** (czerwień) · **Fiolet**
-- **Koty** 🐱 — ciepła paleta, a w tle zamiast kodu padają kotki
-- **Naruto** 🍥 — pomarańcz ninja, w tle japońskie znaki (忍 火 風 雷 影) i narutomaki
-
-Wybrany motyw zapisywany jest w **cookie** `radioantomatee_theme` (ważność 1 rok; automatyczna migracja ze starego `localStorage`). Architektura CSS: każdy motyw ustawia tylko „ziarna" kolorów, a wartości pochodne liczy `color-mix()` — dodanie kolejnego motywu to jeden blok zmiennych. Filtry są zwijane (przycisk „Filtry" z odznaką liczby aktywnych), sortowanie rozbudowane (nazwa, kraj, gatunek, bitrate, ulubione, HIT).
-
-## Kula ziemska (realistyczna)
-
-Panel „Teraz gra" renderuje realistyczną, obracającą się Ziemię na czystym canvasie 2D (bez bibliotek): niebieskie oceany z cieniowaniem **dzień/noc** (terminator śledzący słońce), lądy w barwach wg strefy (zieleń, pustynie, lód polarny), **światła miast** po stronie nocnej, poświata atmosfery (tint z motywu), gwiezdne tło i siatka południków. Kula płynnie dojeżdża do kraju grającej stacji z pulsującym markerem i etykietą.
-
-## Struktura projektu
+## Architektura
 
 ```
-index.html              — główny plik aplikacji
-manifest.json           — manifest PWA (instalacja na telefonie/pulpicie)
-sw.js                   — service worker (cache plików aplikacji)
-css/style.css           — wszystkie style (motyw Matrix: zielony + bursztynowy)
-js/worlddata.js         — dane geograficzne (kropki lądów + centroidy krajów)
-js/globe.js             — kula ziemska (czysty canvas 2D, bez bibliotek)
-js/rain.js              — opadający kod „Matrix" (tło)
-js/app.js               — logika aplikacji (stacje, odtwarzacz, filtry)
-js/presence.js          — licznik osób online (puls do /api/presence)
-api/presence.js         — funkcja serverless licząca obecność (Upstash Redis)
-icons/                  — ikony PWA (192/512/maskable)
+index.html          układ 3-kolumnowy: czat | siatka stacji | teraz gra + filtry
+css/style.css       tokeny motywów (ziarna + color-mix), style, responsywność
+js/app.js           stacje, odtwarzacz (HTML5 Audio + hls.js), filtry, motywy
+js/globe.js         globus canvas (LAND_DOTS/COUNTRY_LL z worlddata.js)
+js/rain.js          animowane tła per motyw (silnik cząsteczek, crossfade)
+js/firebase-init.js inicjalizacja Firebase (konfiguracja publiczna)
+js/chat.js          czat słuchaczy (RTDB push)
+js/presence.js      licznik słuchaczy (RTDB presence)
+js/worlddata.js     dane geograficzne (generowane z Natural Earth)
+js/vendor/          self-hostowane biblioteki: hls.js, firebase-*-compat
+sw.js               service worker (cache "antomatee-vN" - podbij przy zmianach!)
+vercel.json         nagłówki bezpieczeństwa (CSP, nosniff, frame-options)
 ```
 
-## Wdrożenie na GitHub → Vercel
+## Backend (Firebase)
 
+Projekt **radio-antomatee** (Realtime Database, region `europe-west1`, plan
+Spark). Logowanie anonimowe daje `auth.uid` dla reguł bazy. Reguły (publikowane
+w konsoli Firebase) egzekwują limity czatu po stronie serwera: nick 1-24, tekst
+1-100, `t == now`, `uid == auth.uid`, 1 wiadomość/5 s per uid, kasowanie tylko
+wpisów starszych niż 10 minut. Konfiguracja w `js/firebase-init.js` jest
+publiczna z założenia - bezpieczeństwo zapewniają reguły.
 
-1. **Usuń stary `index.html`** z repozytorium (zostanie zastąpiony nową strukturą).
-2. Wgraj **całą zawartość** tego folderu do głównego katalogu repo (z zachowaniem podfolderów `css/`, `js/`, `icons/`).
-3. Commit + push → Vercel automatycznie zrobi deploy.
+Struktura danych:
 
-⭐ **Ulubione, głośność i ostatnia stacja zostaną zachowane** — klucz w localStorage (`radioantomatee-config`) jest ten sam co wcześniej.
+```
+chat/<pushId>       { t, n (nick), x (tekst), uid }
+limits/<uid>        znacznik czasu ostatniej wiadomości (rate limit)
+presence/<uid>/<id> true (wpis per połączenie, sprzątany przez onDisconnect)
+```
 
-## Licznik osób online (opcjonalny — wymaga 1 kroku konfiguracji)
+## Rozwój
 
-W nagłówku pokazuje się plakietka „● N online" — ile osób korzysta z aplikacji w tej chwili
-(anonimowo, ogólnie; bez podziału na stacje, bez danych osobowych).
+Bez build stepu - edytuj pliki i odśwież. Lokalny podgląd:
 
-Działa to dzięki małej funkcji serverless `api/presence.js`, która potrzebuje darmowej
-bazy **Upstash Redis**. Konfiguracja (jednorazowo, ~2 min):
+```
+python -m http.server 8765     # w katalogu repo
+```
 
-1. W panelu Vercela otwórz projekt → zakładka **Storage** (lub **Integrations → Marketplace**).
-2. Dodaj **Upstash → Redis** (darmowy plan). Pozwól Vercelowi utworzyć bazę i **połącz ją z projektem**.
-   Integracja sama ustawi zmienne środowiskowe `KV_REST_API_URL` i `KV_REST_API_TOKEN`.
-3. **Redeploy** projektu (Deployments → ⋯ → Redeploy), żeby zmienne zaczęły działać.
+Firebase działa też z localhost. Po zmianach w plikach cache'owanych przez SW
+podbij `CACHE_NAME` w `sw.js`. Deploy: push na `main` (Vercel wdraża sam);
+przez service workera pierwsza wizyta po deployu serwuje poprzednią wersję -
+odśwież dwa razy.
 
-Gotowe — plakietka pojawi się sama. Liczbę można też sprawdzić wchodząc na
-`https://twoja-domena/api/presence` (zwraca `{"count": N}`).
-
-Jeśli bazy nie skonfigurujesz, aplikacja działa normalnie — plakietka po prostu się nie pokazuje
-(funkcja zwraca `{"count": null}`).
-
-Mechanizm: każda otwarta karta wysyła „puls" do `api/presence` co ~25 s; funkcja trzyma w Redisie
-zbiór sesji wygasających po 60 s i zwraca ich liczbę. Częstotliwość pulsu (`HEARTBEAT_MS` w
-`js/presence.js`) i okno ważności (`WINDOW` w `api/presence.js`) można dostroić — rzadszy puls = mniej
-zapytań do Redisa (istotne przy limicie darmowego planu).
-
-## Co nowego
-
-- 🎨 **8 motywów** z menu w nagłówku (w tym Koty 🐱 i Naruto 🍥), zapis w **cookie**
-- 🌍 **Realistyczna Ziemia** — oceany, terminator dzień/noc, światła miast, atmosfera, siatka geograficzna, gwiazdy
-- 📻 **Kuratorowane, pewne stacje** — stały zestaw sprawdzonych streamów (SomaFM) dołączany zawsze, także gdy API nie odpowiada; aplikacja nigdy nie zostaje z pustą listą
-- 🌍 **Kula ziemska** w panelu "Teraz gra" — obraca się, dojeżdża do kraju grającej stacji, pulsujący marker, markery wszystkich krajów ze stacjami
-- 🌐 **Stacje światowe** — top 300 wg głosów + tagi: rave, hardstyle, gabber, hardcore, hard techno, drum and bass, dubstep, psytrance, techno, house, trance, club (wszystkie dotychczasowe polskie zapytania zachowane)
-- 🇵🇱 **Flagi i polskie nazwy krajów**, nowy chip "Polskie", Polska zawsze pierwsza na liście krajów
-- ⚡ **Cache listy stacji** (6h) — aplikacja startuje natychmiast z cache, w tle cicho się odświeża; przycisk "Odśwież" wymusza pobranie
-- 📱 **PWA** — można zainstalować na telefonie/pulpicie, pliki aplikacji działają z cache
-- 🚀 **Wydajność** — lista renderowana porcjami (płynność przy 1000+ stacjach), `content-visibility`, globus pauzuje gdy karta ukryta
-
-## Uwagi techniczne
-
-- Stacje z [Radio Browser API](https://www.radio-browser.info/) (5 mirrorów, fallback)
-- Odtwarzacz: HTML5 Audio (bez `crossOrigin` — celowo, CORS ucina streamy Icecast) + HLS.js dla `.m3u8`
-- Zero build stepu — czysty HTML/CSS/JS, wystarczy hosting statyczny
+Uwaga na streamy: element `<audio>` celowo nie ma `crossOrigin` (część serwerów
+Icecast nie wysyła nagłówków CORS). CSP: `script-src 'self'` - nowe biblioteki
+self-hostuj w `js/vendor/`, nie z CDN.

@@ -7,12 +7,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#000a02" />
-  <meta name="description" content="Radio Antomatee — polskie i światowe stacje radiowe online. Klubowe, rave, hardstyle i więcej." />
-  <!-- CSP: ciasny script-src (self, bez CDN — hls.js self-hostowany);
+  <meta name="description" content="Radio Antomatee - polskie i światowe stacje radiowe online. Klubowe, rave, hardstyle i więcej." />
+  <!-- CSP: ciasny script-src (self, bez CDN - hls.js self-hostowany);
        connect/media szerokie https:, bo streamy stacji to dowolne hosty z API -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https: wss:; media-src https: blob:; object-src 'none'; base-uri 'self'" />
   <meta property="og:title" content="Radio Antomatee" />
-  <meta property="og:description" content="Polskie i światowe stacje radiowe online — klubowe, rave, hardstyle i więcej. 8 motywów, globus na żywo." />
+  <meta property="og:description" content="Polskie i światowe stacje radiowe online - klubowe, rave, hardstyle i więcej. 8 motywów, globus na żywo." />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="icons/icon-512.png" />
   <meta name="twitter:card" content="summary" />
@@ -29,13 +29,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Radio Browser API mirrors — szybsze pierwsze połączenie -->
+  <!-- Radio Browser API mirrors - szybsze pierwsze połączenie -->
   <link rel="dns-prefetch" href="https://de1.api.radio-browser.info">
   <link rel="dns-prefetch" href="https://de2.api.radio-browser.info">
   <link rel="dns-prefetch" href="https://fr1.api.radio-browser.info">
   <link rel="dns-prefetch" href="https://nl1.api.radio-browser.info">
 
-  <!-- HLS dla streamów m3u8 (Polskie Radio itd.) — self-hostowany:
+  <!-- HLS dla streamów m3u8 (Polskie Radio itd.) - self-hostowany:
        działa offline/przy awarii CDN i eliminuje supply-chain z CDN -->
   <script defer src="js/vendor/hls.min.js"></script>
 
@@ -64,7 +64,7 @@
           <span class="liveDot" id="statusDot"></span>
           <span id="statusText" role="status" aria-live="polite">Ładowanie…</span>
           <span class="onlineChip" id="onlineChip" hidden title="Osoby korzystające teraz z aplikacji">
-            <span class="onlineDot"></span>Słuchaczy:&nbsp;<b id="onlineCount">—</b>
+            <span class="onlineDot"></span>Słuchaczy:&nbsp;<b id="onlineCount">-</b>
           </span>
         </div>
       </div>
@@ -151,7 +151,7 @@
             </div>
           </div>
           <div class="npStation" id="npStation"><span class="idle">Wybierz stację</span></div>
-          <div class="npMeta" id="npMeta">—</div>
+          <div class="npMeta" id="npMeta">-</div>
           <div class="npStats" id="npStats"></div>
         </div>
       </div>
@@ -232,7 +232,7 @@
       </div>
       <div class="pbText" aria-live="polite">
         <div class="mpName" id="mpName">Wybierz stację</div>
-        <div class="mpMeta" id="mpMeta">—</div>
+        <div class="mpMeta" id="mpMeta">-</div>
       </div>
     </div>
 
@@ -266,7 +266,7 @@
 <script defer src="js/globe.js"></script>
 <script defer src="js/rain.js"></script>
 <script defer src="js/app.js"></script>
-<!-- Firebase (self-hostowane — CSP script-src 'self', działa offline z SW):
+<!-- Firebase (self-hostowane - CSP script-src 'self', działa offline z SW):
      licznik słuchaczy i czat na Realtime Database (push przez WebSocket) -->
 <script defer src="js/vendor/firebase-app-compat.js"></script>
 <script defer src="js/vendor/firebase-auth-compat.js"></script>

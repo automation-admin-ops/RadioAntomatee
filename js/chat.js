@@ -1,12 +1,12 @@
 /* ════════════════════════════════════════════════════════════
-   Radio Antomatee — chat.js  ·  Czat słuchaczy (Firebase RTDB)
-   Wiadomości przychodzą PUSHEM (WebSocket) — pojawiają się u
+   Radio Antomatee - chat.js  ·  Czat słuchaczy (Firebase RTDB)
+   Wiadomości przychodzą PUSHEM (WebSocket) - pojawiają się u
    wszystkich natychmiast, bez odpytywania. Zasady (egzekwowane
    też przez reguły bazy, nie tylko w UI):
-     • nick wymagany (1–24), wiadomość 1–100 znaków,
+     • nick wymagany (1-24), wiadomość 1-100 znaków,
      • 1 wiadomość / 5 s na użytkownika,
      • widoczne: max 50 najświeższych, max 10 minut.
-   Render przez textContent — treści są niezaufane.
+   Render przez textContent - treści są niezaufane.
    Bez Firebase panel pozostaje ukryty.
 ════════════════════════════════════════════════════════════ */
 (function () {
@@ -42,7 +42,7 @@
     if (!arr.length) {
       var empty = document.createElement("div");
       empty.className = "chatEmpty";
-      empty.textContent = "Cisza na czacie — napisz coś pierwszy :)";
+      empty.textContent = "Cisza na czacie - napisz coś pierwszy :)";
       list.appendChild(empty);
       return;
     }
@@ -114,7 +114,7 @@
       setHint("");
       startCooldown();
     }).catch(function () {
-      setHint("Za szybko — 1 wiadomość na 5 sekund", true);
+      setHint("Za szybko - 1 wiadomość na 5 sekund", true);
       startCooldown();
     });
   }

@@ -1,9 +1,9 @@
 /* ════════════════════════════════════════════════════════════
-   Radio Antomatee — presence.js  ·  Licznik słuchaczy (Firebase)
+   Radio Antomatee - presence.js  ·  Licznik słuchaczy (Firebase)
    Zero odpytywania: każda przeglądarka trzyma stałe połączenie
    WebSocket z Realtime Database. Wpis presence/<uid>/<połączenie>
    jest zdejmowany przez SERWER natychmiast po zerwaniu połączenia
-   (onDisconnect) — licznik reaguje na wejścia/wyjścia na żywo.
+   (onDisconnect) - licznik reaguje na wejścia/wyjścia na żywo.
    Liczymy UNIKALNYCH użytkowników (kilka kart = 1 słuchacz).
    Bez Firebase (SDK niezaładowane / offline) plakietka się chowa.
 ════════════════════════════════════════════════════════════ */
@@ -27,7 +27,7 @@
     started = true;
     var db = window.RadioFB.db, uid = window.RadioFB.uid;
 
-    /* mój wpis obecności — jeden na kartę, pod wspólnym uid przeglądarki;
+    /* mój wpis obecności - jeden na kartę, pod wspólnym uid przeglądarki;
        przy każdym (ponownym) połączeniu odtwórz wpis i zbrój onDisconnect */
     var myConn = db.ref("presence/" + uid).push();
     db.ref(".info/connected").on("value", function (snap) {

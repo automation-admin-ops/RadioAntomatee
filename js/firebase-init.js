@@ -1,10 +1,10 @@
 /* ════════════════════════════════════════════════════════════
-   Radio Antomatee — firebase-init.js
+   Radio Antomatee - firebase-init.js
    Inicjalizacja Firebase (Realtime Database + anonimowe logowanie).
-   Konfiguracja jest PUBLICZNA z założenia — bezpieczeństwo zapewniają
+   Konfiguracja jest PUBLICZNA z założenia - bezpieczeństwo zapewniają
    reguły bazy (limity czatu, walidacja struktury, prawa zapisu).
    Po zalogowaniu ustawia window.RadioFB = { db, uid } i emituje
-   zdarzenie "radiofb-ready" — słuchają go chat.js i presence.js.
+   zdarzenie "radiofb-ready" - słuchają go chat.js i presence.js.
 ════════════════════════════════════════════════════════════ */
 (function () {
   if (typeof firebase === "undefined") return;   /* SDK się nie załadowało */
@@ -30,7 +30,7 @@
       }
     });
     firebase.auth().signInAnonymously().catch(function () {
-      /* brak logowania (np. offline) — czat/licznik po prostu się nie pokażą */
+      /* brak logowania (np. offline) - czat/licznik po prostu się nie pokażą */
     });
   } catch (e) {}
 })();

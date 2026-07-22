@@ -1,11 +1,11 @@
 /* ════════════════════════════════════════════════════════════
-   RADIO ANTOMATEE — app.js
+   RADIO ANTOMATEE - app.js
    Logika aplikacji: Radio Browser API, odtwarzacz, filtry,
    ulubione, blokowanie zepsutych stacji, cache listy, globus.
 ════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════
-   MIRRORY API — wszystkie stacje z Radio Browser
+   MIRRORY API - wszystkie stacje z Radio Browser
 ══════════════════════════════════════════════════════════ */
 var API_MIRRORS = [
   "https://de1.api.radio-browser.info",
@@ -15,17 +15,17 @@ var API_MIRRORS = [
   "https://at1.api.radio-browser.info"
 ];
 
-/* Polskie tagi klubowe — uzupełniają główną listę PL. */
+/* Polskie tagi klubowe - uzupełniają główną listę PL. */
 var PL_TAG_QUERIES = ["dance", "house", "club", "techno", "trance", "vixa", "edm"];
 
-/* Światowe tagi — rave, klubowe i pochodne (bez ograniczenia kraju). */
+/* Światowe tagi - rave, klubowe i pochodne (bez ograniczenia kraju). */
 var WORLD_TAG_QUERIES = [
   "rave", "hardstyle", "gabber", "hardcore", "hard techno",
   "drum and bass", "dubstep", "psytrance", "techno", "house",
   "trance", "club"
 ];
 
-/* Zapytania po nazwie — gwarantują konkretne "hity"
+/* Zapytania po nazwie - gwarantują konkretne "hity"
    (Energy 2000, RadioParty) niezależnie od rankingu głosów. */
 var EXTRA_NAME_QUERIES = ["energy 2000", "energy2000", "radioparty", "radio party"];
 
@@ -36,7 +36,7 @@ var FEATURED_RE = /(energy\s*2000|radio\s*party|radioparty)/i;
 /* Co liczy się jako stacja klubowa dla szybkiego filtra "Klubowe". */
 var CLUB_RE = /(dance|house|club|techno|trance|vixa|edm|rave|hands\s*up|party|energy\s*2000|hardstyle|gabber|hardcore|drum\s*(?:and|'?n'?|&)\s*bass|\bdnb\b|dubstep|psytrance|jungle|electro)/;
 
-/* Preferowane tagi gatunków (wg priorytetu) — wybiera najbardziej
+/* Preferowane tagi gatunków (wg priorytetu) - wybiera najbardziej
    znaczący tag zamiast pierwszego z brzegu. */
 var GENRE_PRIORITY = [
   "disco polo", "vixa", "hands up", "hardstyle", "gabber", "rave",
@@ -50,7 +50,7 @@ var GENRE_PRIORITY = [
 ];
 
 /* ══════════════════════════════════════════════════════════
-   STACJE KURATOROWANE — pewne, stabilne streamy (zawsze działają)
+   STACJE KURATOROWANE - pewne, stabilne streamy (zawsze działają)
    Dodawane niezależnie od API: nawet gdy Radio Browser nie
    odpowiada, użytkownik ma gwarantowany zestaw grających stacji.
    SomaFM: bezpłatne, wieloletnie, stałe adresy MP3 (bez CORS).
@@ -84,7 +84,7 @@ var CURATED = [
   { name: "SomaFM Folk Forward",        url: "https://ice1.somafm.com/folkfwd-128-mp3",          genre: "Folk" }
 ];
 
-/* Cache listy stacji — aplikacja startuje natychmiast, odświeża w tle. */
+/* Cache listy stacji - aplikacja startuje natychmiast, odświeża w tle. */
 var STATION_CACHE_KEY = "radioantomatee-stations-v3";
 try { localStorage.removeItem("radioantomatee-stations-v2"); } catch(e){}
 var STATION_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 h
@@ -115,7 +115,7 @@ function getPlayer(){
   if(!audioEl){
     audioEl = new Audio();
     audioEl.preload = "none";
-    /* UWAGA: bez crossOrigin="anonymous" — wymusza CORS i ucina wiele
+    /* UWAGA: bez crossOrigin="anonymous" - wymusza CORS i ucina wiele
        streamów Icecast/Shoutcast bez nagłówków CORS. */
     audioEl.addEventListener("playing", function(){ applyVolume(); if(_stopping)return; audioState=3; onPlayStateChange(3); });
     audioEl.addEventListener("pause",   function(){ if(_stopping)return; audioState=2; onPlayStateChange(2); });
@@ -155,7 +155,7 @@ function capWords(s){
 }
 function normUrl(u){ return lower(u).replace(/\/+$/,""); }
 
-/* — kraje: nazwy po polsku — */
+/* - kraje: nazwy po polsku - */
 var _regionNames = null;
 try { _regionNames = new Intl.DisplayNames(["pl"], { type: "region" }); } catch(e){}
 
@@ -215,17 +215,17 @@ function pickGenre(tagsStr){
 }
 
 /* Surowy rekord Radio Browser -> nasz obiekt stacji (albo null). */
-/* — odsiew stacji o spamerskich nazwach (keyword stuffing) — */
+/* - odsiew stacji o spamerskich nazwach (keyword stuffing) - */
 function isJunkName(name){
   if (!name) return true;
   if (name.length > 70) return true;                       /* hurtownie słów kluczowych */
-  if (/^[#–—=|*•~>]/.test(name)) return true;              /* zaczyna się od śmieciowego znaku */
+  if (/^[#--=|*•~>]/.test(name)) return true;              /* zaczyna się od śmieciowego znaku */
   if (/^[-\s]{2,}/.test(name)) return true;                /* "-- Radio", "- - Radio" */
   if (name.indexOf(" @ ") !== -1) return true;             /* "Nazwa @ lista, tagów, spam" */
   var commas = (name.match(/,/g) || []).length;
   if (commas >= 4) return true;                            /* 4+ przecinków = lista tagów */
-  var dashes = (name.match(/\s[–—-]\s|–|—/g) || []).length;
-  if (dashes >= 3) return true;                            /* "A – B – C – D – E" */
+  var dashes = (name.match(/\s[---]\s|-|-/g) || []).length;
+  if (dashes >= 3) return true;                            /* "A - B - C - D - E" */
   return false;
 }
 
@@ -234,7 +234,7 @@ function normalizeStation(s){
   if (!s.name || !trim(s.name)) return null;
   var rawName = trim(s.name);
   if (isJunkName(rawName)) return null;
-  /* ID liczone z surowej nazwy (jak dotychczas) — ulubione przetrwają */
+  /* ID liczone z surowej nazwy (jak dotychczas) - ulubione przetrwają */
   var name = rawName.replace(/\s{2,}/g, " ");
   var tagsLower = lower(s.tags || "");
   var genre = pickGenre(s.tags);
@@ -246,7 +246,7 @@ function normalizeStation(s){
     name: name,
     genre: genre,
     country: cc,
-    /* koercja do liczby — bitrate z publicznego API to dane niezaufane,
+    /* koercja do liczby - bitrate z publicznego API to dane niezaufane,
        a trafia do innerHTML; string mógłby przemycić HTML (XSS) */
     bitrate: (parseInt(s.bitrate, 10) > 0 ? parseInt(s.bitrate, 10) : 0),
     featured: FEATURED_RE.test(name),
@@ -256,7 +256,7 @@ function normalizeStation(s){
 
 async function loadAllStations(){
   /* Wszystkie zapytania równolegle:
-     1. Top PL wg głosów (jak dotychczas — nic nie znika),
+     1. Top PL wg głosów (jak dotychczas - nic nie znika),
      2. polskie tagi klubowe,
      3. zapytania po nazwie (Energy 2000, RadioParty…),
      4. światowy top wg głosów,
@@ -283,7 +283,7 @@ async function loadAllStations(){
     results = await Promise.all(paths.map(function(p){ return fetchFromAnyMirror(p, 9000); }));
   } catch(e) { results = []; }
 
-  /* Główna lista PL musi się udać — inaczej traktuj API jako niedostępne. */
+  /* Główna lista PL musi się udać - inaczej traktuj API jako niedostępne. */
   if (!results.length || !results[0] || !results[0].length) return [];
 
   var seenId = {}, seenUrl = {}, all = [];
@@ -311,7 +311,7 @@ async function loadAllStations(){
   return all;
 }
 
-/* — cache listy stacji w localStorage — */
+/* - cache listy stacji w localStorage - */
 function readStationCache(){
   try {
     var raw = localStorage.getItem(STATION_CACHE_KEY);
@@ -324,7 +324,7 @@ function readStationCache(){
 function writeStationCache(stations){
   try {
     localStorage.setItem(STATION_CACHE_KEY, JSON.stringify({ ts: Date.now(), stations: stations }));
-  } catch(e){ /* limit storage — trudno, działa bez cache */ }
+  } catch(e){ /* limit storage - trudno, działa bez cache */ }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -338,7 +338,7 @@ function loadConfig(){
     if (!cfg || typeof cfg !== "object") return;
     if(cfg.volume   != null) state.volume = clamp(+cfg.volume || 0, 0, 100);
     if(cfg.activeId)         state.activeId = "" + cfg.activeId;
-    /* walidacja kształtu — uszkodzony/zmanipulowany zapis nie może
+    /* walidacja kształtu - uszkodzony/zmanipulowany zapis nie może
        podmienić favorites na tablicę/string i wysypać reszty logiki */
     if(cfg.favorites && typeof cfg.favorites === "object" && !Array.isArray(cfg.favorites))
       state.favorites = cfg.favorites;
@@ -359,7 +359,7 @@ function saveConfig(){
   } catch(e){}
 }
 
-/* Uwaga: dawne auto-blokowanie stacji usunięto w całości — stacje
+/* Uwaga: dawne auto-blokowanie stacji usunięto w całości - stacje
    pochodzą z Radio Browser API (lastcheckok=1 & hidebroken=true, serwer
    sam weryfikuje że grają) + kuratorowanej listy SomaFM. Gdy stream
    chwilowo nie odpowiada, aplikacja pokazuje tylko status błędu. */
@@ -392,7 +392,7 @@ function toggleMute(){
 function setStatus(kind, text){
   var cls = "liveDot" + (kind ? " " + kind : "");
   $("statusDot").className = cls;
-  $("statusText").textContent = text || "—";
+  $("statusText").textContent = text || "-";
   updateArtStatus(kind);
 }
 
@@ -425,7 +425,7 @@ function updatePlayButton(ps){
   var npEq  = $("npEq"); if(npEq)  npEq.classList.toggle("paused", !playing);
   var mpArt = $("mpArt"); if(mpArt) mpArt.classList.toggle("paused", !playing);
 
-  /* equalizer aktywnego wiersza — przełączany w miejscu, bez re-renderu */
+  /* equalizer aktywnego wiersza - przełączany w miejscu, bez re-renderu */
   var rowEq = document.querySelector("#stationList .miniEq");
   if (rowEq) rowEq.classList.toggle("paused", !playing);
 
@@ -478,9 +478,9 @@ function initMediaSession(){
 function setNowPlaying(st){
   if(!st){
     $("npStation").innerHTML = '<span class="idle">Wybierz stację</span>';
-    $("npMeta").textContent = "—";
+    $("npMeta").textContent = "-";
     $("mpName").textContent = "Wybierz stację";
-    $("mpMeta").textContent = "—";
+    $("mpMeta").textContent = "-";
     updateMediaSession(null);
     if (globe) globe.setActive(null);
     return;
@@ -533,7 +533,7 @@ function getActiveStation(){ return state.activeId ? getStationById(state.active
    FILTRY
 ══════════════════════════════════════════════════════════ */
 function renderFilterOptions(){
-  /* kraj — wartości to kody ISO, etykiety: flaga + polska nazwa */
+  /* kraj - wartości to kody ISO, etykiety: flaga + polska nazwa */
   var ccMap = {}, gc = [];
   state.stations.forEach(function(s){ ccMap[s.country] = 1; gc.push(s.genre); });
 
@@ -552,7 +552,7 @@ function renderFilterOptions(){
   selC.options[0] = new Option("Kraj: wszystkie", "");
   ccList.forEach(function(o){ selC.options[selC.length] = new Option(o.label, o.cc); });
   selC.value = state.filters.country || "";
-  /* filtr wskazuje kraj, którego nie ma już w nowej liście — wyzeruj,
+  /* filtr wskazuje kraj, którego nie ma już w nowej liście - wyzeruj,
      inaczej select pokazuje pustkę, a niewidoczny filtr dalej tnie listę */
   if (selC.value !== (state.filters.country || "")) {
     state.filters.country = "";
@@ -620,7 +620,7 @@ function applyFilters(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   RENDEROWANIE LISTY (porcjowane — płynne nawet przy 2000+ stacji)
+   RENDEROWANIE LISTY (porcjowane - płynne nawet przy 2000+ stacji)
 ══════════════════════════════════════════════════════════ */
 var rowEls = [];
 var _renderToken = 0;
@@ -650,7 +650,7 @@ function rebindRowEls(){
 }
 
 /* Punktowa podmiana jednego wiersza (gwiazdka, equalizer aktywnej
-   stacji) — bez niszczenia i odtwarzania całej ~500-elementowej siatki */
+   stacji) - bez niszczenia i odtwarzania całej ~500-elementowej siatki */
 function patchRow(idx){
   var el = rowEls[idx], st = state.view[idx];
   if (!el || !st) return;
@@ -789,9 +789,9 @@ function armConnectTimer(){
 /* ══════════════════════════════════════════════════════════
    ODTWARZANIE
 ══════════════════════════════════════════════════════════ */
-/* Token generacji odtwarzania — każde playUrl/stop go inkrementuje.
+/* Token generacji odtwarzania - każde playUrl/stop go inkrementuje.
    Asynchroniczne odrzucenie play() STAREJ stacji (AbortError przy
-   przełączaniu A→B) niesie stary token i jest ignorowane — nie kasuje
+   przełączaniu A→B) niesie stary token i jest ignorowane - nie kasuje
    watchdoga ani statusu łączenia NOWEJ stacji. */
 var _playToken = 0;
 
@@ -841,7 +841,7 @@ function playUrl(url){
 function playStation(st){
   if (!st) return;
 
-  /* Ponowne uruchomienie już grającej stacji — nic nie rób. */
+  /* Ponowne uruchomienie już grającej stacji - nic nie rób. */
   if (st.id === state.activeId &&
       (audioState === 3 || audioState === 6 || audioState === 11)) {
     return;
@@ -909,7 +909,7 @@ function stopPlayback(){
     var a = getPlayer();
     a.pause(); a.removeAttribute("src"); a.load();
   } catch(e){}
-  /* _stopping zostaje true aż do następnego playUrl — asynchroniczne
+  /* _stopping zostaje true aż do następnego playUrl - asynchroniczne
      odrzucenie przerwanego play() nie pokaże fałszywego "Błąd" po Stop */
   audioState = 1;
   setStatus("", "Zatrzymane");
@@ -918,7 +918,7 @@ function stopPlayback(){
 
 function nextPrev(dir){
   if (!state.view.length) return;
-  /* nawiguj względem GRAJĄCEJ stacji (jeśli jest na liście) — z ekranu
+  /* nawiguj względem GRAJĄCEJ stacji (jeśli jest na liście) - z ekranu
      blokady "następna" ma znaczyć następną po tej, która gra, a nie po
      przypadkowym zaznaczeniu sprzed godziny */
   var base = state.selectedIndex;
@@ -979,7 +979,7 @@ function onPlayStateChange(ns){
 function onPlayerError(){
   stopConnectTimer();
 
-  /* MEDIA_ERR_ABORTED (1) — sami to spowodowaliśmy. Ignoruj. */
+  /* MEDIA_ERR_ABORTED (1) - sami to spowodowaliśmy. Ignoruj. */
   var errCode = 0;
   try { errCode = (audioEl && audioEl.error) ? audioEl.error.code : 0; } catch(e){}
   if (errCode === 1) return;
@@ -1004,7 +1004,7 @@ function resolveRow(target){
 /* ══════════════════════════════════════════════════════════
    ODŚWIEŻANIE LISTY STACJI
 ══════════════════════════════════════════════════════════ */
-/* Kuratorowane stacje jako pełne obiekty (ID, flagi) — liczone raz. */
+/* Kuratorowane stacje jako pełne obiekty (ID, flagi) - liczone raz. */
 var _curatedCache = null;
 function getCuratedStations(){
   if (_curatedCache) return _curatedCache;
@@ -1040,7 +1040,7 @@ function mergeCurated(list){
 
 function adoptStations(stations){
   /* walidacja także danych z cache localStorage: śmieciowe nazwy,
-     wyłącznie https:// (jak w normalizeStation) i liczbowy bitrate —
+     wyłącznie https:// (jak w normalizeStation) i liczbowy bitrate -
      zmanipulowany/staroformatowy cache nie ominie zabezpieczeń */
   stations = (stations || []).filter(function(s){
     return s && s.name && !isJunkName(s.name) && /^https:\/\//i.test(s.url || "");
@@ -1089,7 +1089,7 @@ async function refreshStations(showProgress){
       adoptStations(fresh);
       summarizeStatus(showProgress ? "Lista odświeżona" : "");
     } else if (showProgress) {
-      setStatus("bad", "Nie udało się odświeżyć — API nie odpowiada");
+      setStatus("bad", "Nie udało się odświeżyć - API nie odpowiada");
     }
   } finally {
     state.refreshing = false;
@@ -1156,7 +1156,7 @@ function bindUi(){
     state.selectedIndex = idx;
     updateRowClasses();
     /* na dotyku (także tablet/laptop dotykowy >760px) dwuklik nie
-       istnieje — pojedyncze tapnięcie uruchamia stację */
+       istnieje - pojedyncze tapnięcie uruchamia stację */
     if (isMobile() || e.pointerType === "touch") playSelected();
   });
   bind($("stationList"), "dblclick", function(e){
@@ -1181,7 +1181,7 @@ function bindUi(){
     /* nie przechwytuj skrótów systemowych (Ctrl+F, Alt+←, Cmd+…) */
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     /* fokus na elemencie interaktywnym (przycisk, link, menu motywów):
-       Enter/Spacja muszą aktywować TEN element, a nie globalny skrót —
+       Enter/Spacja muszą aktywować TEN element, a nie globalny skrót -
        inaczej cały UI jest nieobsługiwalny klawiaturą (WCAG 2.1.1) */
     if (src && src.closest && src.closest("button, a, [role='menu']")) {
       if (key === 27) {
@@ -1207,7 +1207,7 @@ function bindUi(){
     }
   });
 
-  /* resize zmienia tylko tekst podpowiedzi — pełny rerender listy
+  /* resize zmienia tylko tekst podpowiedzi - pełny rerender listy
      ~500 kart przy każdej zmianie rozmiaru okna był zbędny */
   var _rt = null;
   window.addEventListener("resize", function(){
@@ -1218,7 +1218,7 @@ function bindUi(){
     }, 200);
   });
 
-  /* stan sieci — jasny komunikat zamiast 15-sekundowego timeoutu */
+  /* stan sieci - jasny komunikat zamiast 15-sekundowego timeoutu */
   window.addEventListener("offline", function(){
     setStatus("bad", "Brak połączenia z internetem");
   });
@@ -1245,27 +1245,27 @@ window.addEventListener("DOMContentLoaded", async function(){
   updatePlayButton(1);
   bindUi();
 
-  /* globus — ze stylem bieżącego motywu */
+  /* globus - ze stylem bieżącego motywu */
   try {
     globe = new RadioGlobe($("globeCanvas"));
     globe.setTheme(document.documentElement.getAttribute("data-theme") || "green");
   } catch(e){ globe = null; }
 
-  /* Service Worker — aplikacja działa jako PWA i startuje błyskawicznie
+  /* Service Worker - aplikacja działa jako PWA i startuje błyskawicznie
      (także na localhost, żeby dało się testować lokalnie) */
   var swOk = location.protocol === "https:" ||
              location.hostname === "localhost" || location.hostname === "127.0.0.1";
   if ("serviceWorker" in navigator && swOk) {
     try {
       navigator.serviceWorker.register("sw.js").then(function(reg){
-        /* SWR serwuje starą wersję do następnej wizyty — przynajmniej
+        /* SWR serwuje starą wersję do następnej wizyty - przynajmniej
            powiedz użytkownikowi, że nowa czeka po odświeżeniu */
         reg.addEventListener("updatefound", function(){
           var w = reg.installing;
           if (!w) return;
           w.addEventListener("statechange", function(){
             if (w.state === "installed" && navigator.serviceWorker.controller) {
-              setStatus("ok", "Nowa wersja gotowa — odśwież stronę");
+              setStatus("ok", "Nowa wersja gotowa - odśwież stronę");
             }
           });
         });
@@ -1273,23 +1273,23 @@ window.addEventListener("DOMContentLoaded", async function(){
     } catch(e){}
   }
 
-  /* 1) Najpierw cache — natychmiastowy start */
+  /* 1) Najpierw cache - natychmiastowy start */
   var cached = readStationCache();
   if (cached) {
     adoptStations(cached.stations);
     summarizeStatus("");
     var age = Date.now() - (+cached.ts || 0);
     if (age > STATION_CACHE_TTL) {
-      /* przeterminowany — odśwież w tle */
+      /* przeterminowany - odśwież w tle */
       refreshStations(false);
     } else {
-      /* świeży — i tak cicho zaktualizuj w tle przy okazji */
+      /* świeży - i tak cicho zaktualizuj w tle przy okazji */
       setTimeout(function(){ refreshStations(false); }, 4000);
     }
     return;
   }
 
-  /* 2) Brak cache — pełne ładowanie */
+  /* 2) Brak cache - pełne ładowanie */
   $("stationList").innerHTML =
     '<div class="loadingState"><span class="loadingPulse"></span>Ładowanie stacji z Radio Browser API…</div>';
   setStatus("warn", "Ładowanie stacji…");
@@ -1297,9 +1297,9 @@ window.addEventListener("DOMContentLoaded", async function(){
   var stations = await loadAllStations();
 
   if (!stations.length) {
-    /* API nie odpowiada — pokaż przynajmniej pewne, kuratorowane stacje */
+    /* API nie odpowiada - pokaż przynajmniej pewne, kuratorowane stacje */
     adoptStations([]);
-    setStatus("warn", "API niedostępne — pokazuję pewne stacje. Kliknij „Odśwież”, by pobrać więcej.");
+    setStatus("warn", "API niedostępne - pokazuję pewne stacje. Kliknij „Odśwież”, by pobrać więcej.");
     return;
   }
 
@@ -1310,7 +1310,7 @@ window.addEventListener("DOMContentLoaded", async function(){
 
 /* ════════════════════════════════════════════════════════════
    MOTYWY (8 do wyboru, zapis w COOKIE) + ZWIJANE FILTRY
-   Warstwa dodatkowa — nie dotyka logiki danych/odtwarzacza.
+   Warstwa dodatkowa - nie dotyka logiki danych/odtwarzacza.
 ════════════════════════════════════════════════════════════ */
 (function () {
   var THEME_COOKIE = "radioantomatee_theme";
@@ -1327,7 +1327,7 @@ window.addEventListener("DOMContentLoaded", async function(){
     try { if (window.RadioBG && window.RadioBG.setMode) window.RadioBG.setMode(THEME_BG[name] || "matrix"); } catch (e) {}
   }
 
-  /* — cookies — */
+  /* - cookies - */
   function setCookie(name, val, days) {
     var d = new Date(); d.setTime(Date.now() + days * 86400000);
     document.cookie = name + "=" + encodeURIComponent(val) +
@@ -1367,10 +1367,10 @@ window.addEventListener("DOMContentLoaded", async function(){
     catch (e) { return false; }
   }
 
-  /* Płynne przejście między motywami — View Transitions API (Chrome).
+  /* Płynne przejście między motywami - View Transitions API (Chrome).
      Bez wsparcia / reduce-motion / trwającej tranzycji: natychmiast
      (tło i tak robi własny płynny crossfade cząsteczek).
-     _desiredTheme trzyma OSTATNIO żądany motyw — callback tranzycji
+     _desiredTheme trzyma OSTATNIO żądany motyw - callback tranzycji
      i finalne uzgodnienie zawsze stosują właśnie jego, więc szybkie
      przełączanie nigdy nie gubi ostatniego wyboru. */
   var _vtBusy = false, _desiredTheme = null;
@@ -1382,7 +1382,7 @@ window.addEventListener("DOMContentLoaded", async function(){
     }
     _vtBusy = true;
     document.documentElement.classList.add("theme-anim");
-    /* zamroź deszcz na czas tranzycji — canvas nie rusza się „pod maską"
+    /* zamroź deszcz na czas tranzycji - canvas nie rusza się „pod maską"
        migawki, więc po odsłonięciu nie ma przeskoku pozycji; crossfade
        trybu deszczu odgrywa się na żywo dopiero po wznowieniu */
     try { if (window.RadioBG && window.RadioBG.pause) window.RadioBG.pause(); } catch (e) {}
@@ -1408,7 +1408,7 @@ window.addEventListener("DOMContentLoaded", async function(){
     } else { done(); }
   }
 
-  /* zastosuj zapisany motyw natychmiast (skrypt `defer` — DOM gotowy).
+  /* zastosuj zapisany motyw natychmiast (skrypt `defer` - DOM gotowy).
      Migracja ze starego localStorage („dark" = bursztyn). */
   var saved = getCookie(THEME_COOKIE);
   if (!saved) {
@@ -1435,12 +1435,12 @@ window.addEventListener("DOMContentLoaded", async function(){
     var n = countActiveFilters();
     if (n > 0) { b.textContent = n; b.hidden = false; } else { b.hidden = true; }
   }
-  /* udostępnij poza IIFE — clearFilters/renderFilterOptions odświeżają
+  /* udostępnij poza IIFE - clearFilters/renderFilterOptions odświeżają
      odznakę po programowej zmianie filtrów (brak zdarzeń change) */
   window._updateFilterBadge = updateFilterBadge;
 
   window.addEventListener("DOMContentLoaded", function () {
-    /* — menu wyboru motywu — */
+    /* - menu wyboru motywu - */
     var bt = $("btnTheme"), menu = $("themeMenu");
     function openMenu(open) {
       if (!menu) return;
@@ -1469,7 +1469,7 @@ window.addEventListener("DOMContentLoaded", async function(){
     });
     markSelected(document.documentElement.getAttribute("data-theme") || "green");
 
-    /* — rail filtrów: przycisk „Filtry” w nagłówku (mobile) rozwija rail — */
+    /* - rail filtrów: przycisk „Filtry” w nagłówku (mobile) rozwija rail - */
     var ft = $("btnFiltersMobile"), rail = $("filterRail");
     bind(ft, "click", function () {
       if (!rail) return;

@@ -1,12 +1,12 @@
 /* ════════════════════════════════════════════════════════════
-   Radio Antomatee — Service Worker
+   Radio Antomatee - Service Worker
    Strategia: stale-while-revalidate dla plików aplikacji
    (same-origin) + cache fontów Google (cross-origin, opaque).
    Streamy audio, Radio Browser API i /api/ (presence) NIE są
-   cache'owane — zawsze lecą prosto do sieci.
+   cache'owane - zawsze lecą prosto do sieci.
 ════════════════════════════════════════════════════════════ */
 
-var CACHE_NAME = "antomatee-v17";
+var CACHE_NAME = "antomatee-v18";
 var FONT_CACHE = "antomatee-fonts-v1";
 
 var PRECACHE = [
@@ -58,7 +58,7 @@ self.addEventListener("fetch", function (event) {
   var url;
   try { url = new URL(req.url); } catch (e) { return; }
 
-  // Fonty Google — cache-first (opaque OK); bez nich offline'owy
+  // Fonty Google - cache-first (opaque OK); bez nich offline'owy
   // start PWA wyglądał na zepsuty (FOIT / brak glifów)
   if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
     event.respondWith(
@@ -79,11 +79,11 @@ self.addEventListener("fetch", function (event) {
   // zawsze prosto do sieci.
   if (url.origin !== self.location.origin) return;
 
-  // /api/ (presence) — dane żywe, Cache-Control: no-store; nie cache'uj.
+  // /api/ (presence) - dane żywe, Cache-Control: no-store; nie cache'uj.
   if (url.pathname.indexOf("/api/") === 0) return;
 
   // Stale-while-revalidate: oddaj z cache od razu, w tle odśwież.
-  // ignoreSearch przy nawigacji — wejście z ?query nie może ominąć
+  // ignoreSearch przy nawigacji - wejście z ?query nie może ominąć
   // cache'a offline (index.html jest zapisany bez query stringa).
   event.respondWith(
     caches.open(CACHE_NAME).then(function (cache) {

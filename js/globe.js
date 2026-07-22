@@ -1,11 +1,11 @@
 /* ════════════════════════════════════════════════════════════
-   RADIO ANTOMATEE — globe.js  ·  Globus dopasowany do motywu
+   RADIO ANTOMATEE - globe.js  ·  Globus dopasowany do motywu
    Jeden silnik, wiele stylów renderu (canvas 2D, bez bibliotek):
-   • realistic — Ziemia z oceanami, terminatorem dzień/noc, światłami
+   • realistic - Ziemia z oceanami, terminatorem dzień/noc, światłami
                  miast (motywy: cyan/lód, cats, naruto),
-   • phosphor  — hologramowy globus fosforowy: ciemna tarcza, jasna
+   • phosphor  - hologramowy globus fosforowy: ciemna tarcza, jasna
                  siatka, świecące kropki lądu (matrix, amber, crimson),
-   • neon      — jak phosphor, ale dwa kolory + poświata „słońca"
+   • neon      - jak phosphor, ale dwa kolory + poświata „słońca"
                  przy horyzoncie (synthwave, violet).
    Styl i paletę wybiera setTheme(nazwa).
 ════════════════════════════════════════════════════════════ */
@@ -14,7 +14,7 @@
 
   var DEG = Math.PI / 180;
 
-  /* — palety globusa per motyw — */
+  /* - palety globusa per motyw - */
   var THEME_GLOBE = {
     green:     { style: "phosphor", dot: "0,255,65",   grid: "0,255,65", gridA: 0.5 },
     amber:     { style: "phosphor", light: true, dot: "232,147,12", grid: "212,140,20", gridA: 0.44 },
@@ -49,7 +49,7 @@
     this.pitch = 20 * DEG;
     this.targetYaw = null;
     this.targetPitch = 20 * DEG;
-    /* ujemny = widok dryfuje na zachód, czyli kontynenty płyną w prawo —
+    /* ujemny = widok dryfuje na zachód, czyli kontynenty płyną w prawo -
        tak wygląda obrót prawdziwej Ziemi oglądanej z kosmosu */
     this.spinSpeed = -0.085;
 
@@ -155,10 +155,10 @@
     if (!this._running) this._draw(0);
   };
 
-  /* — API publiczne — */
+  /* - API publiczne - */
   RadioGlobe.prototype.setTheme = function (name) {
     this.pal = THEME_GLOBE[name] || THEME_GLOBE._default;
-    /* zmienne CSS czytane RAZ przy zmianie motywu, nie w każdej klatce —
+    /* zmienne CSS czytane RAZ przy zmianie motywu, nie w każdej klatce -
        getComputedStyle w pętli rAF wymuszał recalc stylów ~70×/s */
     this._acc = themeRGB();
     this._core = themeCore();
@@ -260,7 +260,7 @@
   };
 
   /* Rzut na ekran: out[0] rośnie na WSCHÓD od środka widoku (znak minus
-     przy rx) — bez tego kula była lustrzanym odbiciem: wschód lądował po
+     przy rx) - bez tego kula była lustrzanym odbiciem: wschód lądował po
      lewej, a kontynenty wyglądały „na odwrót" mimo poprawnego znacznika. */
   function rot(x, y, z, sy, cyaw, sp, cp, out) {
     var rx = x * cyaw + z * sy;
@@ -271,7 +271,7 @@
   }
   function smooth(a, b, t){ t = (t - a) / (b - a); if (t < 0) t = 0; if (t > 1) t = 1; return t * t * (3 - 2 * t); }
 
-  /* — render — */
+  /* - render - */
   RadioGlobe.prototype._draw = function (time) {
     var ctx = this.ctx;
     if (!this.w || !this.h) return;
@@ -290,7 +290,7 @@
     var lightPX = cx + sunVX * R * 0.72;
     var lightPY = cy - sunVY * R * 0.72;
 
-    /* gwiazdy (pomijane na jasnym motywie — byłyby niewidoczne / brudziły) */
+    /* gwiazdy (pomijane na jasnym motywie - byłyby niewidoczne / brudziły) */
     if (!pal.light) {
       var starA = phosphor ? 0.4 : 0.7;
       for (i = 0; i < this.stars.length; i++) {
@@ -328,7 +328,7 @@
     if (phosphor) {
       var disc = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
       if (pal.light) {
-        /* jasna, neutralna tarcza (motyw jasny) — „atlas" */
+        /* jasna, neutralna tarcza (motyw jasny) - „atlas" */
         disc.addColorStop(0, "rgba(255,255,255,1)");
         disc.addColorStop(0.62, "rgba(244,246,250,1)");
         disc.addColorStop(1, "rgba(228,231,238,1)");
@@ -372,13 +372,13 @@
       sxp = cx + v[0] * R;
       syp = cy - v[1] * R;
       depth = v[2];
-      /* kwadratowe kropki (fillRect) — kilkukrotnie szybsze niż arc,
+      /* kwadratowe kropki (fillRect) - kilkukrotnie szybsze niż arc,
          co pozwala na gęsty ląd (~7000 punktów) bez zacięć */
       rr = (1.3 + depth * 0.45) * Rk;
       var d2 = rr * 2;
 
       if (phosphor) {
-        /* świecące kropki lądu — fillStyle stały, ustawiony raz przed pętlą */
+        /* świecące kropki lądu - fillStyle stały, ustawiony raz przed pętlą */
         ctx.globalAlpha = 0.35 + depth * 0.6;
         ctx.fillRect(sxp - rr, syp - rr, d2, d2);
         continue;
