@@ -40,15 +40,19 @@ module.exports = async function handler(req, res) {
 
   var ip = ("" + (req.headers["x-forwarded-for"] || "")).split(",")[0].trim().slice(0, 45) || "unknown";
   var RLKEY = "presence:rl:" + ip;
-  var RLMAX = 30;                // maks. pulsów na minutę z jednego IP
+  var RLMAX = 120;               // maks. żądań/min z jednego IP (IP bywa wspólne: NAT/CGNAT)
 
   var KEY = "presence:online";
   var now = Date.now();
   var WINDOW = 60000;            // sesja „żywa" 60 s od ostatniego pulsu
   var cutoff = now - WINDOW;
 
-  // rate-limit w tym samym pipeline (EXPIRE zawsze — REST pipeline nie umie warunkowo)
-  var cmds = [["INCR", RLKEY], ["EXPIRE", RLKEY, 60]];
+  // Rate-limit: STAŁE okno 60 s. SET..NX zakłada klucz z TTL tylko gdy go
+  // nie ma — TTL biegnie od PIERWSZEGO żądania w oknie i klucz wygasa.
+  // (Poprzednio EXPIRE przy każdym żądaniu wiecznie przedłużał TTL, więc
+  // licznik nigdy się nie zerował i po ~12 min pulsy każdego stałego
+  // słuchacza były odrzucane — licznik „się psuł".)
+  var cmds = [["SET", RLKEY, "0", "EX", "60", "NX"], ["INCR", RLKEY]];
   var pulse = false;
   if (req.method === "GET") {                                   // podgląd bez dopisywania
     cmds.push(["ZREMRANGEBYSCORE", KEY, 0, cutoff], ["ZCARD", KEY]);
@@ -68,7 +72,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify(cmds)
     });
     var data = await r.json();
-    var rl = Array.isArray(data) && data[0] && typeof data[0].result === "number" ? data[0].result : 0;
+    var rl = Array.isArray(data) && data[1] && typeof data[1].result === "number" ? data[1].result : 0; // wynik INCR
     var last = Array.isArray(data) ? data[data.length - 1] : null;     // ZCARD = ostatnia komenda
     var count = last && typeof last.result === "number" ? last.result : null;
 

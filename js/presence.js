@@ -8,7 +8,7 @@
 ════════════════════════════════════════════════════════════ */
 (function () {
   var ENDPOINT = "/api/presence";
-  var HEARTBEAT_MS = 25000;     // częstotliwość pulsu (mniej = dokładniej, więcej zapytań)
+  var HEARTBEAT_MS = 20000;     // częstotliwość pulsu (mniej = dokładniej, więcej zapytań)
 
   /* identyfikator sesji (na czas otwartej karty) */
   var sid = null;
@@ -65,6 +65,7 @@
   }
 
   document.addEventListener("visibilitychange", function () { if (!document.hidden) beat(); });
+  window.addEventListener("online", function () { beat(); });   /* po powrocie sieci od razu wróć na licznik */
   window.addEventListener("pagehide", leave);
   window.addEventListener("beforeunload", leave);
 
