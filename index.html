@@ -10,7 +10,7 @@
   <meta name="description" content="Radio Antomatee — polskie i światowe stacje radiowe online. Klubowe, rave, hardstyle i więcej." />
   <!-- CSP: ciasny script-src (self, bez CDN — hls.js self-hostowany);
        connect/media szerokie https:, bo streamy stacji to dowolne hosty z API -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; media-src https: blob:; object-src 'none'; base-uri 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https: wss:; media-src https: blob:; object-src 'none'; base-uri 'self'" />
   <meta property="og:title" content="Radio Antomatee" />
   <meta property="og:description" content="Polskie i światowe stacje radiowe online — klubowe, rave, hardstyle i więcej. 8 motywów, globus na żywo." />
   <meta property="og:type" content="website" />
@@ -266,6 +266,12 @@
 <script defer src="js/globe.js"></script>
 <script defer src="js/rain.js"></script>
 <script defer src="js/app.js"></script>
+<!-- Firebase (self-hostowane — CSP script-src 'self', działa offline z SW):
+     licznik słuchaczy i czat na Realtime Database (push przez WebSocket) -->
+<script defer src="js/vendor/firebase-app-compat.js"></script>
+<script defer src="js/vendor/firebase-auth-compat.js"></script>
+<script defer src="js/vendor/firebase-database-compat.js"></script>
+<script defer src="js/firebase-init.js"></script>
 <script defer src="js/presence.js"></script>
 <script defer src="js/chat.js"></script>
 </body>

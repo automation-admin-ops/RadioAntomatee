@@ -1,52 +1,55 @@
 /* ════════════════════════════════════════════════════════════
-   Radio Antomatee — chat.js  ·  Czat słuchaczy (panel po lewej)
-   Backend: /api/chat (Upstash Redis). Odpytywanie co 4 s (15 s
-   przy ukrytej karcie). Zasady: nick wymagany, max 100 znaków,
-   1 wiadomość / 5 s; historia max 50 wiadomości i max 10 minut
-   (czyści serwer). Render przez textContent — dane niezaufane.
-   Bez backendu (messages:null / 404) panel pozostaje ukryty.
+   Radio Antomatee — chat.js  ·  Czat słuchaczy (Firebase RTDB)
+   Wiadomości przychodzą PUSHEM (WebSocket) — pojawiają się u
+   wszystkich natychmiast, bez odpytywania. Zasady (egzekwowane
+   też przez reguły bazy, nie tylko w UI):
+     • nick wymagany (1–24), wiadomość 1–100 znaków,
+     • 1 wiadomość / 5 s na użytkownika,
+     • widoczne: max 50 najświeższych, max 10 minut.
+   Render przez textContent — treści są niezaufane.
+   Bez Firebase panel pozostaje ukryty.
 ════════════════════════════════════════════════════════════ */
 (function () {
-  var ENDPOINT = "/api/chat";
-  var POLL_VISIBLE_MS = 4000;
-  var POLL_HIDDEN_MS = 15000;
+  var TTL_MS = 10 * 60 * 1000;
+  var MAX_MSG = 50;
   var SEND_COOLDOWN_MS = 5000;
 
-  /* ten sam identyfikator sesji co licznik obecności */
-  var sid = null;
-  try { sid = sessionStorage.getItem("ra-presence-sid"); } catch (e) {}
-  if (!sid) {
-    sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
-    try { sessionStorage.setItem("ra-presence-sid", sid); } catch (e) {}
-  }
-
   var panel, list, nickEl, textEl, sendBtn, hintEl;
-  var lastSig = "", lastPoll = 0, cooldownUntil = 0, disabled = false, myNick = "";
+  var db = null, uid = null;
+  var msgs = {};                      /* id → {t,n,x,uid} */
+  var cooldownUntil = 0, myNick = "";
 
   function fmtTime(t) {
     var d = new Date(+t || 0);
     return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
   }
 
-  function render(msgs) {
-    /* przerysuj tylko, gdy coś się zmieniło — bez skakania scrolla */
-    var sig = msgs.length + "|" + (msgs.length ? msgs[msgs.length - 1].i + msgs[0].i : "");
-    if (sig === lastSig) return;
-    lastSig = sig;
+  function liveMessages() {
+    var cutoff = Date.now() - TTL_MS, out = [];
+    for (var id in msgs) {
+      if (!msgs.hasOwnProperty(id)) continue;
+      if ((+msgs[id].t || 0) >= cutoff) out.push(msgs[id]);
+    }
+    out.sort(function (a, b) { return (+a.t) - (+b.t); });
+    return out.slice(-MAX_MSG);
+  }
 
+  function render() {
+    if (!list) return;
+    var arr = liveMessages();
     var nearBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 48;
     list.textContent = "";
-    if (!msgs.length) {
+    if (!arr.length) {
       var empty = document.createElement("div");
       empty.className = "chatEmpty";
       empty.textContent = "Cisza na czacie — napisz coś pierwszy :)";
       list.appendChild(empty);
       return;
     }
-    for (var i = 0; i < msgs.length; i++) {
-      var m = msgs[i];
+    for (var i = 0; i < arr.length; i++) {
+      var m = arr[i];
       var row = document.createElement("div");
-      row.className = "chatMsg" + (m.n === myNick ? " mine" : "");
+      row.className = "chatMsg" + (m.uid === uid ? " mine" : "");
       var time = document.createElement("span");
       time.className = "chatTime"; time.textContent = fmtTime(m.t);
       var nick = document.createElement("b");
@@ -59,24 +62,15 @@
     if (nearBottom) list.scrollTop = list.scrollHeight;
   }
 
-  async function poll(force) {
-    if (disabled) return;
-    var interval = document.hidden ? POLL_HIDDEN_MS : POLL_VISIBLE_MS;
-    if (!force && Date.now() - lastPoll < interval - 200) return;
-    lastPoll = Date.now();
-    try {
-      var r = await fetch(ENDPOINT);
-      if (!r.ok) { if (r.status === 404) disable(); return; }
-      var d = await r.json();
-      if (!d || d.messages === null) { disable(); return; }
-      if (panel.hidden) panel.hidden = false;
-      render(d.messages || []);
-    } catch (e) { /* chwilowy brak sieci — spróbujemy przy następnym ticku */ }
-  }
-
-  function disable() {
-    disabled = true;
-    panel.hidden = true;
+  /* najlepszo-wysiłkowe sprzątanie: reguły pozwalają skasować TYLKO
+     wiadomości starsze niż 10 minut, więc nikt nie skasuje żywych */
+  function gcExpired() {
+    var cutoff = Date.now() - TTL_MS;
+    for (var id in msgs) {
+      if (msgs.hasOwnProperty(id) && (+msgs[id].t || 0) < cutoff) {
+        try { db.ref("chat/" + id).remove().catch(function () {}); } catch (e) {}
+      }
+    }
   }
 
   function setHint(msg, isErr) {
@@ -91,28 +85,6 @@
     else if (!cooling) setHint(textEl.value.length ? textEl.value.length + "/100" : "");
   }
 
-  async function send() {
-    var nick = nickEl.value.trim().slice(0, 24);
-    var text = textEl.value.trim().slice(0, 100);
-    if (!nick || !text || Date.now() < cooldownUntil) return;
-    myNick = nick;
-    try { localStorage.setItem("ra-chat-nick", nick); } catch (e) {}
-    sendBtn.disabled = true;
-    try {
-      var r = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sid: sid, nick: nick, text: text })
-      });
-      if (r.status === 429) { setHint("Za szybko — 1 wiadomość na 5 sekund", true); startCooldown(); return; }
-      if (!r.ok) { setHint("Nie udało się wysłać", true); updateSendState(); return; }
-      textEl.value = "";
-      setHint("");
-      startCooldown();
-      lastSig = ""; poll(true);           /* od razu pokaż własną wiadomość */
-    } catch (e) { setHint("Brak połączenia", true); updateSendState(); }
-  }
-
   function startCooldown() {
     cooldownUntil = Date.now() + SEND_COOLDOWN_MS;
     var tick = setInterval(function () {
@@ -123,7 +95,47 @@
     }, 250);
   }
 
+  function send() {
+    var nick = nickEl.value.trim().slice(0, 24);
+    var text = textEl.value.trim().slice(0, 100);
+    if (!nick || !text || !db || !uid || Date.now() < cooldownUntil) return;
+    myNick = nick;
+    try { localStorage.setItem("ra-chat-nick", nick); } catch (e) {}
+    sendBtn.disabled = true;
+
+    /* atomowo: wiadomość + znacznik czasu do limitu 1/5 s (reguły bazy
+       sprawdzają limits/<uid> i odrzucają zbyt szybkie wysyłki) */
+    var id = db.ref("chat").push().key;
+    var upd = {};
+    upd["chat/" + id] = { t: firebase.database.ServerValue.TIMESTAMP, n: nick, x: text, uid: uid };
+    upd["limits/" + uid] = firebase.database.ServerValue.TIMESTAMP;
+    db.ref().update(upd).then(function () {
+      textEl.value = "";
+      setHint("");
+      startCooldown();
+    }).catch(function () {
+      setHint("Za szybko — 1 wiadomość na 5 sekund", true);
+      startCooldown();
+    });
+  }
+
   function start() {
+    if (db || !window.RadioFB || !window.RadioFB.uid) return;
+    db = window.RadioFB.db;
+    uid = window.RadioFB.uid;
+    panel.hidden = false;
+
+    /* push: każda zmiana ostatnich 50 wiadomości przychodzi sama */
+    db.ref("chat").orderByChild("t").limitToLast(MAX_MSG).on("value", function (snap) {
+      msgs = snap.val() || {};
+      render();
+    }, function () { panel.hidden = true; });
+
+    /* co 30 s odśwież widok (wygasające 10 min) + posprzątaj bazę */
+    setInterval(function () { render(); gcExpired(); }, 30000);
+  }
+
+  function init() {
     panel = document.getElementById("chatPanel");
     list = document.getElementById("chatList");
     nickEl = document.getElementById("chatNick");
@@ -143,11 +155,10 @@
     sendBtn.addEventListener("click", send);
     updateSendState();
 
-    poll(true);
-    setInterval(function () { poll(false); }, 1000);
-    document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(true); });
+    if (window.RadioFB && window.RadioFB.uid) start();
+    document.addEventListener("radiofb-ready", start);
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
-  else start();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();

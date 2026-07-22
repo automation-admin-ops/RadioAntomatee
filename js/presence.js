@@ -1,79 +1,55 @@
 /* ════════════════════════════════════════════════════════════
-   Radio Antomatee — presence.js
-   Pokazuje, ile osób korzysta z aplikacji „w tej chwili".
-   Wysyła anonimowy „puls" do /api/presence co ~25 s i wyświetla
-   zwróconą liczbę w plakietce w nagłówku (#onlineChip).
-   Jeśli backend nie jest skonfigurowany (count:null) lub funkcja
-   nie odpowiada — plakietka pozostaje ukryta, aplikacja działa.
+   Radio Antomatee — presence.js  ·  Licznik słuchaczy (Firebase)
+   Zero odpytywania: każda przeglądarka trzyma stałe połączenie
+   WebSocket z Realtime Database. Wpis presence/<uid>/<połączenie>
+   jest zdejmowany przez SERWER natychmiast po zerwaniu połączenia
+   (onDisconnect) — licznik reaguje na wejścia/wyjścia na żywo.
+   Liczymy UNIKALNYCH użytkowników (kilka kart = 1 słuchacz).
+   Bez Firebase (SDK niezaładowane / offline) plakietka się chowa.
 ════════════════════════════════════════════════════════════ */
 (function () {
-  var ENDPOINT = "/api/presence";
-  var HEARTBEAT_MS = 20000;     // częstotliwość pulsu (mniej = dokładniej, więcej zapytań)
-
-  /* identyfikator sesji (na czas otwartej karty) */
-  var sid = null;
-  try { sid = sessionStorage.getItem("ra-presence-sid"); } catch (e) {}
-  if (!sid) {
-    sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
-    try { sessionStorage.setItem("ra-presence-sid", sid); } catch (e) {}
-  }
-
-  var chip = null, countEl = null, timer = null;
+  var chip = null, countEl = null, started = false;
 
   function render(n) {
     if (!chip) return;
     if (typeof n === "number" && n >= 1) {
-      countEl.textContent = n;
+      countEl.textContent = Math.min(n, 9999);
       chip.hidden = false;
       chip.setAttribute("title", n === 1 ? "1 osoba korzysta teraz z Radia Antomatee"
                                           : n + " osób korzysta teraz z Radia Antomatee");
     } else {
-      chip.hidden = true;       // brak backendu / brak danych — nie pokazuj
+      chip.hidden = true;
     }
   }
 
-  async function beat() {
-    try {
-      var r = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sid: sid }),
-        keepalive: true
-      });
-      if (!r.ok) { render(null); return; }
-      var d = await r.json();
-      render(d ? d.count : null);
-    } catch (e) { render(null); }
-  }
-
-  function leave() {
-    try {
-      var payload = JSON.stringify({ sid: sid, leave: true });
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(ENDPOINT, new Blob([payload], { type: "application/json" }));
-      } else {
-        fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true });
-      }
-    } catch (e) {}
-  }
-
-  /* Puls idzie ZAWSZE, póki karta żyje — liczymy każdego z otwartą
-     aplikacją, nie tylko aktywnie patrzących/słuchających. Karty w tle
-     przeglądarka dławi do ~1 pulsu/min, dlatego serwerowe okno „życia"
-     sesji jest dłuższe (150 s) i toleruje takie przerwy. */
   function start() {
+    if (started || !window.RadioFB || !window.RadioFB.uid) return;
+    started = true;
+    var db = window.RadioFB.db, uid = window.RadioFB.uid;
+
+    /* mój wpis obecności — jeden na kartę, pod wspólnym uid przeglądarki;
+       przy każdym (ponownym) połączeniu odtwórz wpis i zbrój onDisconnect */
+    var myConn = db.ref("presence/" + uid).push();
+    db.ref(".info/connected").on("value", function (snap) {
+      if (snap.val() === true) {
+        myConn.onDisconnect().remove();
+        myConn.set(true);
+      }
+    });
+
+    /* licznik = liczba unikalnych użytkowników (kluczy uid) */
+    db.ref("presence").on("value", function (snap) {
+      render(snap.numChildren());
+    }, function () { render(null); });
+  }
+
+  function init() {
     chip = document.getElementById("onlineChip");
     countEl = document.getElementById("onlineCount");
-    beat();
-    timer = setInterval(beat, HEARTBEAT_MS);
+    if (window.RadioFB && window.RadioFB.uid) start();
+    document.addEventListener("radiofb-ready", start);
   }
 
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) beat(); });
-  window.addEventListener("online", function () { beat(); });   /* po powrocie sieci od razu wróć na licznik */
-  window.addEventListener("pageshow", function () { beat(); }); /* powrót z bfcache po "leave" */
-  window.addEventListener("pagehide", leave);
-  window.addEventListener("beforeunload", leave);
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
-  else start();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();

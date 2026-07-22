@@ -6,7 +6,7 @@
    cache'owane — zawsze lecą prosto do sieci.
 ════════════════════════════════════════════════════════════ */
 
-var CACHE_NAME = "antomatee-v16";
+var CACHE_NAME = "antomatee-v17";
 var FONT_CACHE = "antomatee-fonts-v1";
 
 var PRECACHE = [
@@ -21,6 +21,10 @@ var PRECACHE = [
   "./js/rain.js",
   "./js/worlddata.js",
   "./js/vendor/hls.min.js",
+  "./js/vendor/firebase-app-compat.js",
+  "./js/vendor/firebase-auth-compat.js",
+  "./js/vendor/firebase-database-compat.js",
+  "./js/firebase-init.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png"
