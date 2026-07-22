@@ -108,70 +108,24 @@
     </div>
   </header>
 
-  <!-- ══ GŁÓWNY UKŁAD: rail filtrów · siatka kart · teraz gra ══ -->
+  <!-- ══ GŁÓWNY UKŁAD: czat · siatka kart · teraz gra + filtry ══ -->
   <div id="main">
 
-    <!-- LEWY PANEL: FILTRY -->
-    <aside id="filterRail">
-      <div class="railHead">
-        <span class="railTitle">Filtry</span>
-        <span class="filterBadge" id="filterBadge" hidden>0</span>
-      </div>
-
-      <div class="railSection">
-        <div class="railLabel">Szybkie</div>
-        <label class="railChip" id="onlyPLChip" title="Tylko polskie stacje">
-          <input type="checkbox" id="onlyPL" />
-          <span class="railChipIco">🇵🇱</span> Polskie
-        </label>
-        <label class="railChip" id="onlyClubChip" title="Klubowe / dance / rave / hardstyle / techno">
-          <input type="checkbox" id="onlyClub" />
-          <span class="railChipIco">🎧</span> Klubowe
-        </label>
-        <label class="railChip" id="onlyFavChip" title="Tylko ulubione">
-          <input type="checkbox" id="onlyFav" />
-          <span class="railChipIco">★</span> Ulubione
-        </label>
-      </div>
-
-      <div class="railSection">
-        <div class="railLabel">Filtruj</div>
-        <select class="select" id="filterCountry" aria-label="Kraj"></select>
-        <select class="select" id="filterGenre" aria-label="Gatunek"></select>
-        <select class="select" id="sortMode" aria-label="Sortowanie">
-          <optgroup label="Nazwa">
-            <option value="name">A &#8594; Z</option>
-            <option value="name-desc">Z &#8594; A</option>
-          </optgroup>
-          <optgroup label="Kraj">
-            <option value="country">Kraj A &#8594; Z</option>
-            <option value="country-desc">Kraj Z &#8594; A</option>
-          </optgroup>
-          <optgroup label="Jako&#347;&#263; / gatunek">
-            <option value="genre">Gatunek</option>
-            <option value="bitrate">Bitrate &#8595;</option>
-            <option value="bitrate-asc">Bitrate &#8593;</option>
-          </optgroup>
-          <optgroup label="Inne">
-            <option value="fav">Ulubione naprz&#243;d</option>
-            <option value="hit">HIT naprz&#243;d</option>
-          </optgroup>
-        </select>
-      </div>
-
-      <div class="railSection railTools">
-        <button class="railBtn" id="btnClear" type="button">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          Wyczy&#347;&#263;
-        </button>
-        <button class="railBtn" id="btnRefresh" type="button" title="Pobierz &#347;wie&#380;&#261; list&#281; stacji z API">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Od&#347;wie&#380;
-        </button>
-        <button class="railBtn ghost" id="btnResetStorage" type="button" title="Zresetuj ulubione, g&#322;o&#347;no&#347;&#263; i zapami&#281;tane ustawienia">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M9 7V5h6v2m-8 0l1 13h8l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Resetuj
-        </button>
+    <!-- LEWY PANEL: CZAT SŁUCHACZY -->
+    <aside id="chatPanel" hidden>
+      <div class="panelBlock chatBlock">
+        <div class="panelTitle">Czat słuchaczy</div>
+        <div id="chatList" role="log" aria-label="Wiadomości czatu"></div>
+        <div class="chatForm">
+          <input id="chatNick" type="text" maxlength="24" placeholder="Twój nick (wymagany)…" autocomplete="nickname" aria-label="Nick" />
+          <div class="chatRow">
+            <input id="chatText" type="text" maxlength="100" placeholder="Napisz wiadomość…" autocomplete="off" aria-label="Treść wiadomości" />
+            <button id="chatSend" type="button" class="chatSendBtn" aria-label="Wyślij wiadomość" title="Wyślij (Enter)">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12l16-7-6 16-2.5-6.5L4 12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="chatHint" id="chatHint" aria-live="polite"></div>
+        </div>
       </div>
     </aside>
 
@@ -202,16 +156,69 @@
         </div>
       </div>
 
-      <div class="panelBlock kbdBlock">
-        <div class="panelTitle">Skróty klawiaturowe</div>
-        <div class="kbdList">
-          <div class="kbdRow"><span class="kbdLabel">Wybór stacji</span><span class="kbdKeys"><span class="kbdKey">↑</span><span class="kbdKey">↓</span></span></div>
-          <div class="kbdRow"><span class="kbdLabel">Uruchom wybraną</span><span class="kbdKeys"><span class="kbdKey">Enter</span></span></div>
-          <div class="kbdRow"><span class="kbdLabel">Graj / Pauza</span><span class="kbdKeys"><span class="kbdKey">Spacja</span></span></div>
-          <div class="kbdRow"><span class="kbdLabel">Poprzednia / następna</span><span class="kbdKeys"><span class="kbdKey">←</span><span class="kbdKey">→</span></span></div>
-          <div class="kbdRow"><span class="kbdLabel">Ulubione / Wycisz</span><span class="kbdKeys"><span class="kbdKey">F</span><span class="kbdKey">M</span></span></div>
+      <!-- FILTRY (pod „Teraz gra") -->
+      <aside id="filterRail">
+        <div class="railHead">
+          <span class="railTitle">Filtry</span>
+          <span class="filterBadge" id="filterBadge" hidden>0</span>
         </div>
-      </div>
+
+        <div class="railSection">
+          <div class="railLabel">Szybkie</div>
+          <label class="railChip" id="onlyPLChip" title="Tylko polskie stacje">
+            <input type="checkbox" id="onlyPL" />
+            <span class="railChipIco">🇵🇱</span> Polskie
+          </label>
+          <label class="railChip" id="onlyClubChip" title="Klubowe / dance / rave / hardstyle / techno">
+            <input type="checkbox" id="onlyClub" />
+            <span class="railChipIco">🎧</span> Klubowe
+          </label>
+          <label class="railChip" id="onlyFavChip" title="Tylko ulubione">
+            <input type="checkbox" id="onlyFav" />
+            <span class="railChipIco">★</span> Ulubione
+          </label>
+        </div>
+
+        <div class="railSection">
+          <div class="railLabel">Filtruj</div>
+          <select class="select" id="filterCountry" aria-label="Kraj"></select>
+          <select class="select" id="filterGenre" aria-label="Gatunek"></select>
+          <select class="select" id="sortMode" aria-label="Sortowanie">
+            <optgroup label="Nazwa">
+              <option value="name">A &#8594; Z</option>
+              <option value="name-desc">Z &#8594; A</option>
+            </optgroup>
+            <optgroup label="Kraj">
+              <option value="country">Kraj A &#8594; Z</option>
+              <option value="country-desc">Kraj Z &#8594; A</option>
+            </optgroup>
+            <optgroup label="Jako&#347;&#263; / gatunek">
+              <option value="genre">Gatunek</option>
+              <option value="bitrate">Bitrate &#8595;</option>
+              <option value="bitrate-asc">Bitrate &#8593;</option>
+            </optgroup>
+            <optgroup label="Inne">
+              <option value="fav">Ulubione naprz&#243;d</option>
+              <option value="hit">HIT naprz&#243;d</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="railSection railTools">
+          <button class="railBtn" id="btnClear" type="button">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Wyczy&#347;&#263;
+          </button>
+          <button class="railBtn" id="btnRefresh" type="button" title="Pobierz &#347;wie&#380;&#261; list&#281; stacji z API">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Od&#347;wie&#380;
+          </button>
+          <button class="railBtn ghost" id="btnResetStorage" type="button" title="Zresetuj ulubione, g&#322;o&#347;no&#347;&#263; i zapami&#281;tane ustawienia">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M9 7V5h6v2m-8 0l1 13h8l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Resetuj
+          </button>
+        </div>
+      </aside>
     </aside>
   </div>
 </div>
@@ -260,5 +267,6 @@
 <script defer src="js/rain.js"></script>
 <script defer src="js/app.js"></script>
 <script defer src="js/presence.js"></script>
+<script defer src="js/chat.js"></script>
 </body>
 </html>

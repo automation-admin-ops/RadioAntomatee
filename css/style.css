@@ -311,14 +311,49 @@ input{ caret-color:var(--accent); }
 .themeOpt.sel{ background:var(--accent-wash); color:var(--chrome-ink); }
 .themeOpt.sel .tick{ opacity:1; color:var(--accent); }
 
-/* ── 4. UKŁAD GŁÓWNY — 3 kolumny: rail · siatka · teraz gra ── */
-#main{ display:grid; grid-template-columns:236px minmax(0,1fr) 340px; gap:var(--s5); align-items:start; }
+/* ── 4. UKŁAD GŁÓWNY — 3 kolumny: czat · siatka · teraz gra + filtry ── */
+#main{ display:grid; grid-template-columns:300px minmax(0,1fr) 330px; gap:var(--s5); align-items:start; }
 #centerCol{ min-width:0; }
-#rightPanel{ display:flex; flex-direction:column; gap:var(--s5); position:sticky; top:92px; }
+#rightPanel{ display:flex; flex-direction:column; gap:var(--s5); }
 
-/* LEWY RAIL FILTRÓW */
+/* CZAT (lewa kolumna) */
+#chatPanel{ position:sticky; top:92px; }
+#chatPanel[hidden]{ display:none; }
+.chatBlock{ display:flex; flex-direction:column; }
+#chatList{
+  height:min(46vh, 430px); overflow-y:auto; display:flex; flex-direction:column; gap:7px;
+  padding:10px; border-radius:var(--r2); border:1px solid var(--chrome-line);
+  background:color-mix(in srgb, var(--paper) 55%, transparent);
+}
+.chatMsg{ font-size:12.5px; line-height:1.45; overflow-wrap:anywhere; word-break:break-word; }
+.chatMsg .chatTime{ font-family:var(--mono); font-size:10px; color:var(--chrome-mut); margin-right:6px; }
+.chatMsg .chatNick{ color:var(--accent); margin-right:6px; }
+.chatMsg.mine .chatNick{ color:var(--chrome-ink); text-shadow:0 0 8px var(--chrome-glow); }
+.chatMsg .chatText{ color:var(--chrome-soft); }
+.chatEmpty{ color:var(--chrome-mut); font-size:12.5px; text-align:center; padding:var(--s5) var(--s2); }
+.chatForm{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.chatForm input{
+  width:100%; height:40px; padding:0 12px; border-radius:var(--r2);
+  border:1px solid var(--chrome-line); background:var(--paper); color:var(--ink);
+  font-size:13px; transition:border-color var(--dur), box-shadow var(--dur);
+}
+.chatForm input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+.chatRow{ display:flex; gap:8px; }
+.chatRow input{ flex:1; min-width:0; }
+.chatSendBtn{
+  flex-shrink:0; width:40px; height:40px; border-radius:var(--r2); display:grid; place-items:center;
+  color:var(--on-accent); background:radial-gradient(120% 120% at 30% 20%, var(--accent-amber), var(--accent) 72%);
+  box-shadow:0 0 14px var(--chrome-glow); transition:filter var(--dur), opacity var(--dur);
+}
+.chatSendBtn svg{ width:18px; height:18px; }
+.chatSendBtn:hover:not(:disabled){ filter:brightness(1.1); }
+.chatSendBtn:disabled{ opacity:.45; cursor:default; }
+.chatHint{ min-height:15px; font-family:var(--mono); font-size:10.5px; color:var(--chrome-mut); }
+.chatHint.err{ color:#ff7a7a; }
+
+/* FILTRY (blok w prawej kolumnie) */
 #filterRail{
-  position:sticky; top:92px; display:flex; flex-direction:column; gap:var(--s4);
+  display:flex; flex-direction:column; gap:var(--s4);
   padding:var(--s4); border-radius:var(--r4); border:1px solid var(--line-strong);
   background:linear-gradient(160deg, var(--chrome-1), var(--chrome-2)); color:var(--chrome-ink);
   box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 0 24px var(--accent-glow), 0 16px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
@@ -453,13 +488,6 @@ input{ caret-color:var(--accent); }
 .statChip{ display:inline-flex; align-items:baseline; gap:6px; padding:7px 13px; border-radius:99px; background:var(--chrome-fill); border:1px solid var(--chrome-line); font-size:11.5px; color:var(--chrome-mut); }
 .statChip b{ font-family:var(--mono); font-size:13px; color:var(--chrome-ink); }
 
-.kbdList{ display:flex; flex-direction:column; }
-.kbdRow{ display:flex; align-items:center; justify-content:space-between; gap:var(--s4); padding:9px 0; }
-.kbdRow + .kbdRow{ border-top:1px solid var(--chrome-line); }
-.kbdLabel{ font-size:13.5px; color:var(--chrome-soft); }
-.kbdKeys{ display:flex; gap:5px; }
-.kbdKey{ font-family:var(--mono); font-size:11px; font-weight:700; min-width:28px; height:28px; padding:0 8px; display:inline-grid; place-items:center; color:var(--chrome-ink); background:var(--chrome-fill); border:1px solid var(--chrome-line); border-radius:7px; }
-
 /* ── 8. DOLNY PASEK ODTWARZACZA (desktop + mobile) ────────── */
 #playerBar{
   position:fixed; left:0; right:0; bottom:0; z-index:40;
@@ -487,18 +515,19 @@ input{ caret-color:var(--accent); }
 .pbVol{ display:flex; align-items:center; gap:10px; flex:1 1 0; justify-content:flex-end; max-width:230px; }
 
 /* ── 9. RESPONSYWNOŚĆ ─────────────────────────────────────── */
-/* średnie: rail + siatka, „Teraz gra” pełną szerokością pod spodem */
+/* średnie: siatka + prawa kolumna, czat pełną szerokością pod spodem */
 @media (max-width:1180px){
-  #main{ grid-template-columns:210px minmax(0,1fr); }
-  #rightPanel{ grid-column:1 / -1; position:static; flex-direction:row; flex-wrap:wrap; }
-  #rightPanel .panelBlock{ flex:1 1 320px; }
+  #main{ grid-template-columns:minmax(0,1fr) 300px; }
+  #centerCol{ order:1; }
+  #rightPanel{ order:2; }
+  #chatPanel{ order:3; grid-column:1 / -1; position:static; }
+  #chatList{ height:min(38vh, 320px); }
   #stationList{ max-height:none; }
 }
 /* wąskie: wszystko w jednej kolumnie */
 @media (max-width:860px){
   #main{ grid-template-columns:1fr; }
-  #filterRail{ position:static; }
-  #rightPanel{ flex-direction:column; }
+  #chatPanel{ grid-column:auto; }
 }
 @media (max-width:760px){
   #shell{ padding:var(--s3) var(--s3) calc(96px + env(safe-area-inset-bottom)); }
