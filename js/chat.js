@@ -5,19 +5,28 @@
    też przez reguły bazy, nie tylko w UI):
      • nick wymagany (1-24), wiadomość 1-100 znaków,
      • 1 wiadomość / 5 s na użytkownika,
-     • widoczne: max 50 najświeższych, max 10 minut.
+     • widoczne: max 50 najświeższych, max 15 minut.
+   Nowe wiadomości (gdy nie patrzysz na czat / karta w tle) zapalają
+   dzwoneczek przy nazwie radia i licznik w tytule karty.
    Render przez textContent - treści są niezaufane.
    Bez Firebase panel pozostaje ukryty.
 ════════════════════════════════════════════════════════════ */
 (function () {
-  var TTL_MS = 10 * 60 * 1000;
+  var TTL_MS = 15 * 60 * 1000;
   var MAX_MSG = 50;
   var SEND_COOLDOWN_MS = 5000;
 
-  var panel, list, nickEl, textEl, sendBtn, hintEl;
+  var panel, list, nickEl, textEl, sendBtn, hintEl, bellEl, bellCountEl;
   var db = null, uid = null;
   var msgs = {};                      /* id → {t,n,x,uid} */
   var cooldownUntil = 0, myNick = "";
+
+  /* powiadomienia o nowych wiadomościach */
+  var seen = {};                      /* id → 1 dla wiadomości już „odnotowanych" */
+  var primed = false;                 /* pierwsza migawka nie wywołuje alarmu */
+  var unread = 0;
+  var chatInView = false;
+  var baseTitle = document.title;
 
   function fmtTime(t) {
     var d = new Date(+t || 0);
@@ -28,15 +37,16 @@
     var cutoff = Date.now() - TTL_MS, out = [];
     for (var id in msgs) {
       if (!msgs.hasOwnProperty(id)) continue;
-      if ((+msgs[id].t || 0) >= cutoff) out.push(msgs[id]);
+      var m = msgs[id];
+      if ((+m.t || 0) >= cutoff) out.push({ t: m.t, n: m.n, x: m.x, uid: m.uid, id: id });
     }
     out.sort(function (a, b) { return (+a.t) - (+b.t); });
     return out.slice(-MAX_MSG);
   }
 
-  function render() {
+  function render(arr) {
     if (!list) return;
-    var arr = liveMessages();
+    arr = arr || liveMessages();
     var nearBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 48;
     list.textContent = "";
     if (!arr.length) {
@@ -63,7 +73,7 @@
   }
 
   /* najlepszo-wysiłkowe sprzątanie: reguły pozwalają skasować TYLKO
-     wiadomości starsze niż 10 minut, więc nikt nie skasuje żywych */
+     wiadomości starsze niż 15 minut, więc nikt nie skasuje żywych */
   function gcExpired() {
     var cutoff = Date.now() - TTL_MS;
     for (var id in msgs) {
@@ -71,6 +81,40 @@
         try { db.ref("chat/" + id).remove().catch(function () {}); } catch (e) {}
       }
     }
+  }
+
+  /* ── powiadomienia (dzwoneczek + tytuł karty) ── */
+  function chatVisibleNow() {
+    return document.visibilityState === "visible" && chatInView;
+  }
+  function updateBell() {
+    if (bellEl) {
+      bellEl.hidden = unread <= 0;
+      if (unread > 0) {
+        bellEl.setAttribute("title", unread === 1
+          ? "1 nowa wiadomość na czacie"
+          : unread + " nowych wiadomości na czacie");
+        if (bellCountEl) bellCountEl.textContent = unread > 9 ? "9+" : ("" + unread);
+      }
+    }
+    document.title = unread > 0 ? ("(" + unread + ") 🔔 " + baseTitle) : baseTitle;
+  }
+  function markRead() {
+    if (unread !== 0) { unread = 0; updateBell(); }
+  }
+  function noteIncoming(arr) {
+    var fresh = 0;
+    for (var i = 0; i < arr.length; i++) {
+      var m = arr[i];
+      if (!m.id || seen[m.id]) continue;
+      seen[m.id] = 1;
+      if (!primed) continue;               /* pierwsze załadowanie - bez alarmu */
+      if (m.uid === uid) continue;          /* własne wiadomości nie liczą */
+      fresh++;
+    }
+    if (!primed) { primed = true; return; }
+    if (chatVisibleNow()) { markRead(); return; }
+    if (fresh > 0) { unread += fresh; updateBell(); }
   }
 
   function setHint(msg, isErr) {
@@ -128,10 +172,12 @@
     /* push: każda zmiana ostatnich 50 wiadomości przychodzi sama */
     db.ref("chat").orderByChild("t").limitToLast(MAX_MSG).on("value", function (snap) {
       msgs = snap.val() || {};
-      render();
+      var arr = liveMessages();
+      render(arr);
+      noteIncoming(arr);
     }, function () { panel.hidden = true; });
 
-    /* co 30 s odśwież widok (wygasające 10 min) + posprzątaj bazę */
+    /* co 30 s odśwież widok (wygasające 15 min) + posprzątaj bazę */
     setInterval(function () { render(); gcExpired(); }, 30000);
   }
 
@@ -142,6 +188,8 @@
     textEl = document.getElementById("chatText");
     sendBtn = document.getElementById("chatSend");
     hintEl = document.getElementById("chatHint");
+    bellEl = document.getElementById("chatBell");
+    bellCountEl = document.getElementById("chatBellCount");
     if (!panel || !list) return;
 
     try { myNick = localStorage.getItem("ra-chat-nick") || ""; } catch (e) {}
@@ -154,6 +202,28 @@
     });
     sendBtn.addEventListener("click", send);
     updateSendState();
+
+    /* czytanie = kasowanie dzwoneczka */
+    if (bellEl) {
+      bellEl.addEventListener("click", function () {
+        markRead();
+        if (panel.scrollIntoView) panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        if (list) list.scrollTop = list.scrollHeight;
+      });
+    }
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (es) {
+        chatInView = !!(es[0] && es[0].isIntersecting);
+        if (chatVisibleNow()) markRead();
+      }, { threshold: 0.25 });
+      io.observe(panel);
+    } else {
+      chatInView = true;   /* brak IO - zakładamy widoczność */
+    }
+    document.addEventListener("visibilitychange", function () { if (chatVisibleNow()) markRead(); });
+    list.addEventListener("scroll", markRead);
+    if (nickEl) nickEl.addEventListener("focus", markRead);
+    if (textEl) textEl.addEventListener("focus", markRead);
 
     if (window.RadioFB && window.RadioFB.uid) start();
     document.addEventListener("radiofb-ready", start);

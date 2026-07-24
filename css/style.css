@@ -244,6 +244,30 @@ input{ caret-color:var(--accent); }
 .onlineChip b{ color:var(--chrome-ink); font-weight:700; text-shadow:0 0 7px var(--chrome-glow); font-variant-numeric:tabular-nums; }
 .onlineDot{ width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 7px var(--accent); animation:pulse 2.2s var(--ease-o) infinite; }
 
+/* dzwoneczek nowych wiadomości - obok nazwy radia */
+.chatBell{
+  position:relative; flex-shrink:0; align-self:center; margin-left:var(--s1);
+  width:38px; height:38px; border-radius:50%; display:grid; place-items:center;
+  color:var(--accent); background:var(--accent-wash); border:1px solid var(--accent-glow);
+  box-shadow:0 0 14px var(--accent-glow); cursor:pointer;
+  transform-origin:top center; animation:bellShake 1.4s var(--ease) infinite;
+  transition:background var(--dur), color var(--dur);
+}
+.chatBell[hidden]{ display:none; }
+.chatBell svg{ width:19px; height:19px; }
+.chatBell:hover{ background:var(--accent-wash2); color:var(--chrome-ink); }
+.chatBellCount{
+  position:absolute; top:-4px; right:-4px; min-width:17px; height:17px; padding:0 4px;
+  border-radius:99px; background:var(--accent); color:var(--on-accent);
+  font-family:var(--mono); font-size:10px; font-weight:700; line-height:17px; text-align:center;
+  box-shadow:0 0 8px var(--accent-glow);
+}
+@keyframes bellShake{
+  0%,55%,100%{ transform:rotate(0); }
+  60%{ transform:rotate(14deg); } 66%{ transform:rotate(-12deg); }
+  72%{ transform:rotate(9deg); } 78%{ transform:rotate(-6deg); } 84%{ transform:rotate(0); }
+}
+
 .toolbar{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
 .ctrlBtn{
   width:44px; height:44px; border-radius:50%; display:grid; place-items:center; color:var(--chrome-soft);
