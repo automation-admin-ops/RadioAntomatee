@@ -15,16 +15,20 @@
   var DEG = Math.PI / 180;
 
   /* - palety globusa per motyw - */
+  /* mark = kolor kropki lokalizacyjnej (aktywny kraj + markery krajów).
+     Dobrany tak, by KONTRASTOWAĆ z kolorem lądu danego motywu (inaczej
+     np. zielona kropka ginęła na zielonym lądzie Matrixa), ale pasował
+     do palety. */
   var THEME_GLOBE = {
-    green:     { style: "phosphor", dot: "0,255,65",   grid: "0,255,65", gridA: 0.5 },
-    amber:     { style: "phosphor", light: true, dot: "232,147,12", grid: "212,140,20", gridA: 0.44 },
-    crimson:   { style: "phosphor", light: true, dot: "214,28,28", grid: "200,30,30", gridA: 0.42 },
-    synthwave: { style: "neon", light: true, dot: "20,180,220", grid: "224,31,138", gridA: 0.5, sun: "224,31,138" },
-    violet:    { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "169,112,255", gridA: 0.10 },
-    cyan:      { style: "realistic", ocean: ["165,225,245", "95,175,215", "40,110,160"], landTint: [1.3, 1.32, 1.45], atm: "14,165,196", gridA: 0.14, ice: true },
-    cats:      { style: "phosphor", light: true, dot: "240,122,46", grid: "214,120,60", gridA: 0.4 },
-    naruto:    { style: "phosphor", light: true, dot: "255,106,0", grid: "230,110,20", gridA: 0.4 },
-    _default:  { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "0,255,65", gridA: 0.10 }
+    green:     { style: "phosphor", dot: "0,255,65",   grid: "0,255,65", gridA: 0.5,  mark: "255,196,0" },
+    amber:     { style: "phosphor", light: true, dot: "232,147,12", grid: "212,140,20", gridA: 0.44, mark: "20,110,190" },
+    crimson:   { style: "phosphor", light: true, dot: "214,28,28", grid: "200,30,30", gridA: 0.42, mark: "24,86,214" },
+    synthwave: { style: "neon", light: true, dot: "20,180,220", grid: "224,31,138", gridA: 0.5, sun: "224,31,138", mark: "250,204,21" },
+    violet:    { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "169,112,255", gridA: 0.10, mark: "255,72,170" },
+    cyan:      { style: "realistic", ocean: ["165,225,245", "95,175,215", "40,110,160"], landTint: [1.3, 1.32, 1.45], atm: "14,165,196", gridA: 0.14, ice: true, mark: "255,110,20" },
+    cats:      { style: "phosphor", light: true, dot: "240,122,46", grid: "214,120,60", gridA: 0.4, mark: "12,140,130" },
+    naruto:    { style: "phosphor", light: true, dot: "255,106,0", grid: "230,110,20", gridA: 0.4, mark: "30,100,235" },
+    _default:  { style: "realistic", ocean: ["70,150,210", "26,90,150", "8,34,66"], landTint: [1, 1, 1], atm: "0,255,65", gridA: 0.10, mark: "255,196,0" }
   };
 
   function _cssVar(name, fb){
@@ -428,7 +432,9 @@
     ctx.fillStyle = rim;
     ctx.beginPath(); ctx.arc(cx, cy, R * 1.06, 0, 6.283); ctx.fill();
 
-    /* markery krajów */
+    /* markery krajów - w kontrastującym kolorze MARK, z jasnym rdzeniem
+       i ciemnym obrysem, żeby były czytelne na każdym tle */
+    var MARK = pal.mark || ACC;
     var m, msx, msy, isActive, mr, mz2, activePt = null;
     var markers = this.markers || [];
     for (i = 0; i < markers.length; i++) {
@@ -440,28 +446,37 @@
       isActive = (m.cc === this.activeCC);
       mr = m.r * Rk * (0.78 + mz2 * 0.32);
       if (isActive) { activePt = { x: msx, y: msy, r: mr, depth: mz2 }; continue; }
-      ctx.fillStyle = "rgba(" + ACC + "," + (0.4 + mz2 * 0.5).toFixed(3) + ")";
+      /* ciemny obrys dla oddzielenia od lądu + wypełnienie MARK + jasny rdzeń */
+      ctx.fillStyle = "rgba(0,0,0," + (0.35 + mz2 * 0.25).toFixed(3) + ")";
+      ctx.beginPath(); ctx.arc(msx, msy, mr + 1.1, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "rgba(" + MARK + "," + (0.65 + mz2 * 0.35).toFixed(3) + ")";
       ctx.beginPath(); ctx.arc(msx, msy, mr, 0, 6.283); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255," + (0.3 + mz2 * 0.3).toFixed(3) + ")";
-      ctx.beginPath(); ctx.arc(msx, msy, Math.max(0.8, mr * 0.4), 0, 6.283); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255," + (0.55 + mz2 * 0.3).toFixed(3) + ")";
+      ctx.beginPath(); ctx.arc(msx, msy, Math.max(0.9, mr * 0.42), 0, 6.283); ctx.fill();
     }
 
     if (activePt) {
       var pulse = this.playing ? (0.5 + 0.5 * Math.sin(time * 4)) : 0.25;
-      ctx.strokeStyle = "rgba(" + ACC + "," + (0.62 - pulse * 0.32).toFixed(3) + ")";
-      ctx.lineWidth = 1.8;
-      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, activePt.r + 5 + pulse * 8, 0, 6.283); ctx.stroke();
-
-      var ag = ctx.createRadialGradient(activePt.x, activePt.y, 0, activePt.x, activePt.y, activePt.r * 5.5);
-      ag.addColorStop(0, "rgba(" + ACC + ",0.6)");
-      ag.addColorStop(1, "rgba(" + ACC + ",0)");
+      /* poświata w kolorze MARK */
+      var ag = ctx.createRadialGradient(activePt.x, activePt.y, 0, activePt.x, activePt.y, activePt.r * 6);
+      ag.addColorStop(0, "rgba(" + MARK + ",0.7)");
+      ag.addColorStop(0.5, "rgba(" + MARK + ",0.22)");
+      ag.addColorStop(1, "rgba(" + MARK + ",0)");
       ctx.fillStyle = ag;
-      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, activePt.r * 5.5, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, activePt.r * 6, 0, 6.283); ctx.fill();
 
-      ctx.fillStyle = CORE;
-      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, activePt.r + 1.4, 0, 6.283); ctx.fill();
-      ctx.fillStyle = "rgb(" + ACC + ")";
-      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, Math.max(1.5, activePt.r * 0.45), 0, 6.283); ctx.fill();
+      /* pulsujący pierścień */
+      ctx.strokeStyle = "rgba(" + MARK + "," + (0.85 - pulse * 0.35).toFixed(3) + ")";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, activePt.r + 6 + pulse * 9, 0, 6.283); ctx.stroke();
+
+      /* ciemny obrys -> pełna kropka MARK -> jasny rdzeń (max kontrast) */
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, activePt.r + 3.2, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "rgb(" + MARK + ")";
+      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, activePt.r + 2, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.beginPath(); ctx.arc(activePt.x, activePt.y, Math.max(1.8, activePt.r * 0.5), 0, 6.283); ctx.fill();
 
       if (this.activeLabel) {
         var label = this.activeLabel;

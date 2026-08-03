@@ -85,8 +85,8 @@ var CURATED = [
 ];
 
 /* Cache listy stacji - aplikacja startuje natychmiast, odświeża w tle. */
-var STATION_CACHE_KEY = "radioantomatee-stations-v3";
-try { localStorage.removeItem("radioantomatee-stations-v2"); } catch(e){}
+var STATION_CACHE_KEY = "radioantomatee-stations-v4";
+try { localStorage.removeItem("radioantomatee-stations-v2"); localStorage.removeItem("radioantomatee-stations-v3"); } catch(e){}
 var STATION_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 h
 
 /* ══════════════════════════════════════════════════════════
@@ -262,7 +262,7 @@ async function loadAllStations(){
      4. światowy top wg głosów,
      5. światowe tagi rave / hardstyle / techno / dnb… */
   var paths = [
-    "/json/stations/search?countrycode=PL&lastcheckok=1&hidebroken=true&order=votes&reverse=true&limit=500"
+    "/json/stations/search?countrycode=PL&lastcheckok=1&hidebroken=true&order=votes&reverse=true&limit=1000"
   ];
   PL_TAG_QUERIES.forEach(function(t){
     paths.push("/json/stations/search?countrycode=PL&tag=" + encodeURIComponent(t) +
@@ -272,7 +272,7 @@ async function loadAllStations(){
     paths.push("/json/stations/search?name=" + encodeURIComponent(n) +
                "&hidebroken=true&order=votes&reverse=true&limit=20");
   });
-  paths.push("/json/stations/search?lastcheckok=1&hidebroken=true&order=votes&reverse=true&limit=300");
+  paths.push("/json/stations/search?lastcheckok=1&hidebroken=true&order=votes&reverse=true&limit=2500");
   WORLD_TAG_QUERIES.forEach(function(t){
     paths.push("/json/stations/search?tag=" + encodeURIComponent(t) +
                "&lastcheckok=1&hidebroken=true&order=votes&reverse=true&limit=60");
@@ -533,15 +533,22 @@ function getActiveStation(){ return state.activeId ? getStationById(state.active
    FILTRY
 ══════════════════════════════════════════════════════════ */
 function renderFilterOptions(){
-  /* kraj - wartości to kody ISO, etykiety: flaga + polska nazwa */
-  var ccMap = {}, gc = [];
-  state.stations.forEach(function(s){ ccMap[s.country] = 1; gc.push(s.genre); });
+  /* kraj - lista WSZYSTKICH krajów z Radio Browser (241), gdy dostępna;
+     dzięki temu można wybrać dowolny kraj, a jego stacje dociągamy na
+     żywo (liveFetchCountry). Przed załadowaniem listy - fallback do
+     krajów z aktualnie wczytanych stacji. */
+  var gc = [];
+  state.stations.forEach(function(s){ gc.push(s.genre); });
 
-  var ccList = Object.keys(ccMap).map(function(cc){
-    return { cc: cc, label: countryName(cc) };
-  });
+  var ccList;
+  if (ALL_COUNTRIES && ALL_COUNTRIES.length) {
+    ccList = ALL_COUNTRIES.map(function(cc){ return { cc: cc, label: countryName(cc) }; });
+  } else {
+    var ccMap = {};
+    state.stations.forEach(function(s){ if (s.country && s.country !== "??") ccMap[s.country] = 1; });
+    ccList = Object.keys(ccMap).map(function(cc){ return { cc: cc, label: countryName(cc) }; });
+  }
   ccList.sort(function(a,b){
-    /* Polska zawsze pierwsza, potem alfabetycznie po polsku */
     if (a.cc === "PL") return -1;
     if (b.cc === "PL") return 1;
     return a.label.localeCompare(b.label, "pl");
@@ -552,8 +559,6 @@ function renderFilterOptions(){
   selC.options[0] = new Option("Kraj: wszystkie", "");
   ccList.forEach(function(o){ selC.options[selC.length] = new Option(o.label, o.cc); });
   selC.value = state.filters.country || "";
-  /* filtr wskazuje kraj, którego nie ma już w nowej liście - wyzeruj,
-     inaczej select pokazuje pustkę, a niewidoczny filtr dalej tnie listę */
   if (selC.value !== (state.filters.country || "")) {
     state.filters.country = "";
     selC.value = "";
@@ -1097,10 +1102,103 @@ async function refreshStations(showProgress){
 }
 
 /* ══════════════════════════════════════════════════════════
+   DOCIĄGANIE NA ŻYWO (cała baza ~61k na żądanie)
+   Baza startowa to top ~kilka tys. stacji; resztę świata (dowolny
+   kraj / dowolna nazwa) pobieramy z Radio Browser dopiero, gdy
+   użytkownik jej zaszuka albo wybierze kraj z listy.
+══════════════════════════════════════════════════════════ */
+var ALL_COUNTRIES = null;                 /* ["US","DE",...] - kraje z >0 stacji */
+var COUNTRIES_KEY = "radioantomatee-countries-v1";
+var _fetchedCC = {};                       /* kody krajów już dociągnięte */
+var _searchedTerms = {};                   /* frazy już wyszukane w sieci */
+var _netToken = 0;
+
+/* Dołącz nowe stacje do już wczytanych (bez duplikatów). Zwraca ile dodano. */
+function mergeLiveStations(rawArray){
+  if (!Array.isArray(rawArray) || !rawArray.length) return 0;
+  var idSet = {}, urlSet = {};
+  for (var i = 0; i < state.stations.length; i++) {
+    idSet[state.stations[i].id] = 1;
+    urlSet[normUrl(state.stations[i].url)] = 1;
+  }
+  var added = 0;
+  for (var j = 0; j < rawArray.length; j++) {
+    var st = normalizeStation(rawArray[j]);   /* odsiew śmieci/https/bitrate */
+    if (!st) continue;
+    var uKey = normUrl(st.url);
+    if (idSet[st.id] || urlSet[uKey]) continue;
+    idSet[st.id] = 1; urlSet[uKey] = 1;
+    state.stations.push(st);
+    added++;
+  }
+  if (added) {
+    renderFilterOptions();
+    renderList();
+    updateGlobeCountries();
+    updateStats();
+  }
+  return added;
+}
+
+/* Pełna lista krajów (raz, z cache 7 dni) - zasila filtr kraju. */
+async function loadCountries(){
+  try {
+    var raw = localStorage.getItem(COUNTRIES_KEY);
+    if (raw) {
+      var c = JSON.parse(raw);
+      if (c && Array.isArray(c.list) && (Date.now() - (+c.ts || 0) < 7 * 24 * 3600 * 1000)) {
+        ALL_COUNTRIES = c.list; renderFilterOptions(); return;
+      }
+    }
+  } catch(e){}
+  var data = await fetchFromAnyMirror("/json/countries", 9000);
+  if (!Array.isArray(data)) return;
+  var list = [];
+  data.forEach(function(o){
+    var cc = trim(o.iso_3166_1 || "").toUpperCase();
+    if (cc.length === 2 && (+o.stationcount || 0) > 0) list.push(cc);
+  });
+  if (!list.length) return;
+  ALL_COUNTRIES = list;
+  try { localStorage.setItem(COUNTRIES_KEY, JSON.stringify({ ts: Date.now(), list: list })); } catch(e){}
+  renderFilterOptions();
+}
+
+/* Dociągnij stacje wybranego kraju (raz na kraj). */
+async function liveFetchCountry(cc){
+  cc = trim(cc).toUpperCase();
+  if (!cc || _fetchedCC[cc]) return;
+  _fetchedCC[cc] = 1;
+  var path = "/json/stations/search?countrycode=" + encodeURIComponent(cc) +
+             "&hidebroken=true&order=votes&reverse=true&limit=400";
+  var data = await fetchFromAnyMirror(path, 9000);
+  if (data && data.length) mergeLiveStations(data);
+}
+
+/* Dociągnij stacje pasujące do wpisanej frazy (raz na frazę).
+   Szukamy równolegle po NAZWIE (np. „RMF") i po TAGU (np. „reggaeton",
+   „salsa", „lofi"), więc trafiają zarówno konkretne stacje, jak i gatunki. */
+async function liveSearch(q){
+  q = lower(q);
+  if (q.length < 2 || _searchedTerms[q]) return;
+  _searchedTerms[q] = 1;
+  var tok = ++_netToken;
+  var enc = encodeURIComponent(q);
+  var byName = "/json/stations/search?name=" + enc + "&hidebroken=true&order=votes&reverse=true&limit=100";
+  var byTag  = "/json/stations/search?tag="  + enc + "&hidebroken=true&order=votes&reverse=true&limit=100";
+  var res = await Promise.all([ fetchFromAnyMirror(byName, 8000), fetchFromAnyMirror(byTag, 8000) ]);
+  if (tok !== _netToken) return;        /* pojawiła się nowsza fraza */
+  var combined = [];
+  if (Array.isArray(res[0])) combined = combined.concat(res[0]);
+  if (Array.isArray(res[1])) combined = combined.concat(res[1]);
+  if (combined.length) mergeLiveStations(combined);
+}
+
+/* ══════════════════════════════════════════════════════════
    PODPIĘCIA UI
 ══════════════════════════════════════════════════════════ */
 function bindUi(){
-  var _st = null;
+  var _st = null, _netT = null;
   bind($("search"), "input", function(){
     clearTimeout(_st);
     _st = setTimeout(function(){
@@ -1108,8 +1206,17 @@ function bindUi(){
       state.selectedIndex = 0;
       renderList();
     }, 180);
+    /* osobny, dłuższy debounce na zapytanie sieciowe - dociąga z całej
+       bazy stacje, których nie ma jeszcze lokalnie */
+    clearTimeout(_netT);
+    _netT = setTimeout(function(){ liveSearch($("search").value || ""); }, 500);
   });
-  bind($("filterCountry"), "change", function(){ state.filters.country = $("filterCountry").value || ""; state.selectedIndex=0; renderList(); });
+  bind($("filterCountry"), "change", function(){
+    state.filters.country = $("filterCountry").value || "";
+    state.selectedIndex = 0;
+    renderList();
+    if (state.filters.country) liveFetchCountry(state.filters.country);
+  });
   bind($("filterGenre"),   "change", function(){ state.filters.genre   = $("filterGenre").value   || ""; state.selectedIndex=0; renderList(); });
   bind($("sortMode"),      "change", function(){ state.filters.sort    = $("sortMode").value      || "name"; saveConfig(); renderList(); });
 
@@ -1244,6 +1351,10 @@ window.addEventListener("DOMContentLoaded", async function(){
   setVolume(state.volume);
   updatePlayButton(1);
   bindUi();
+
+  /* pełna lista krajów do filtra (w tle) - pozwala wybrać dowolny kraj,
+     którego stacje dociągniemy na żywo */
+  loadCountries();
 
   /* globus - ze stylem bieżącego motywu */
   try {
