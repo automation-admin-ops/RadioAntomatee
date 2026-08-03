@@ -1363,23 +1363,29 @@ window.addEventListener("DOMContentLoaded", async function(){
   } catch(e){ globe = null; }
 
   /* Service Worker - aplikacja działa jako PWA i startuje błyskawicznie
-     (także na localhost, żeby dało się testować lokalnie) */
+     (także na localhost, żeby dało się testować lokalnie).
+     AUTO-AKTUALIZACJA: nowy SW robi skipWaiting + clients.claim, a tu
+     nasłuchujemy "controllerchange" i przeładowujemy stronę RAZ - dzięki
+     temu użytkownik dostaje najnowszą wersję bez ręcznego odświeżania.
+     Ulubione (localStorage) NIE są tym ruszane - to osobny magazyn. */
   var swOk = location.protocol === "https:" ||
              location.hostname === "localhost" || location.hostname === "127.0.0.1";
   if ("serviceWorker" in navigator && swOk) {
+    var _hadController = !!navigator.serviceWorker.controller;
+    var _swReloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      /* przeładuj tylko, gdy AKTUALIZUJEMY istniejącą wersję (nie przy
+         pierwszej instalacji) i tylko raz - żeby nie wpaść w pętlę */
+      if (_swReloading || !_hadController) return;
+      _swReloading = true;
+      setStatus("ok", "Aktualizuję do najnowszej wersji…");
+      location.reload();
+    });
     try {
       navigator.serviceWorker.register("sw.js").then(function(reg){
-        /* SWR serwuje starą wersję do następnej wizyty - przynajmniej
-           powiedz użytkownikowi, że nowa czeka po odświeżeniu */
-        reg.addEventListener("updatefound", function(){
-          var w = reg.installing;
-          if (!w) return;
-          w.addEventListener("statechange", function(){
-            if (w.state === "installed" && navigator.serviceWorker.controller) {
-              setStatus("ok", "Nowa wersja gotowa - odśwież stronę");
-            }
-          });
-        });
+        try { reg.update(); } catch(e){}          /* sprawdź aktualizację od razu */
+        /* dodatkowo dopytuj o nowszą wersję co 30 min (dla długo otwartych kart) */
+        setInterval(function(){ try { reg.update(); } catch(e){} }, 30 * 60 * 1000);
       }).catch(function(){});
     } catch(e){}
   }
