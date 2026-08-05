@@ -482,6 +482,7 @@ function setNowPlaying(st){
     $("mpName").textContent = "Wybierz stację";
     $("mpMeta").textContent = "-";
     updateMediaSession(null);
+    npTrackStop();
     if (globe) globe.setActive(null);
     return;
   }
@@ -493,7 +494,132 @@ function setNowPlaying(st){
   $("mpName").textContent = st.name;
   $("mpMeta").textContent = meta;
   updateMediaSession(st);
+  npTrackStop();                 /* zmiana stacji - wyczysc stary tytul; polling ruszy przy "Na żywo" */
   if (globe) globe.setActive(st.country, cn);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TERAZ GRA - tytul granego utworu (proxy ICY / HLS ID3)
+══════════════════════════════════════════════════════════ */
+var _npTrackToken = 0;
+var _npTrackTimer = null;
+var _npTrackAbort = null;
+var _npTrackTitle = "";
+
+function setNpTrack(title){
+  var t = (title || "").trim();
+  _npTrackTitle = t;
+  var el = $("npTrack");
+  if (el){
+    if (t){ el.textContent = t; el.hidden = false; }
+    else { el.textContent = ""; el.hidden = true; }
+  }
+  refreshMediaTrack();
+}
+
+/* Gdy znamy tytul utworu, pokaz go jako "title" na ekranie blokady,
+   a nazwe stacji przesun do "artist". Bez tytulu - jak dotad. */
+function refreshMediaTrack(){
+  if (!("mediaSession" in navigator)) return;
+  var st = getActiveStation();
+  if (!st) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  _npTrackTitle || st.name,
+      artist: _npTrackTitle ? st.name : (st.genre + " · " + countryName(st.country)),
+      album:  "Radio Antomatee",
+      artwork: [
+        { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },
+        { src: "icons/icon-512.png", sizes: "512x512", type: "image/png" }
+      ]
+    });
+  } catch(e){}
+}
+
+function npTrackStop(){
+  _npTrackToken++;                                   /* uniewaznij wiszace fetch/timery */
+  if (_npTrackTimer){ clearTimeout(_npTrackTimer); _npTrackTimer = null; }
+  if (_npTrackAbort){ try { _npTrackAbort.abort(); } catch(e){} _npTrackAbort = null; }
+  setNpTrack(null);
+}
+
+/* Start pollingu tytulu przy przejsciu w "Na żywo".
+   HLS pomijamy - tam tytul leci ze zdarzen ID3 hls.js (patrz playUrl). */
+function npTrackStart(){
+  npTrackStop();
+  var st = getActiveStation();
+  if (!st || !st.url) return;
+  if (/\.m3u8/i.test(st.url)) return;
+  var tok = _npTrackToken;
+  var url = st.url;
+  function poll(){
+    if (tok !== _npTrackToken) return;
+    if (_npTrackAbort){ try { _npTrackAbort.abort(); } catch(e){} }
+    _npTrackAbort = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    fetch("api/nowplaying?url=" + encodeURIComponent(url), {
+      cache: "no-store",
+      signal: _npTrackAbort ? _npTrackAbort.signal : undefined
+    }).then(function(r){ return (r && r.ok) ? r.json() : null; })
+      .then(function(d){
+        if (tok !== _npTrackToken) return;
+        if (d && d.title) setNpTrack(d.title);
+      }).catch(function(){ /* brak tytulu to nie blad - ignoruj */ });
+    if (tok === _npTrackToken) _npTrackTimer = setTimeout(poll, 20000);
+  }
+  _npTrackTimer = setTimeout(poll, 1500);            /* chwila zwloki - stream musi sie polaczyc */
+}
+
+/* ── HLS ID3: wydobycie ramki TIT2 (tytul) z metadanych fragmentu ── */
+function extractId3Title(d){
+  try {
+    var samples = (d && d.samples) || [];
+    for (var s = 0; s < samples.length; s++){
+      var bytes = samples[s].data || samples[s].unit;
+      if (!bytes) continue;
+      var t = id3FindTIT2(bytes);
+      if (t) return t;
+    }
+  } catch(e){}
+  return null;
+}
+function id3FindTIT2(b){
+  for (var i = 0; i + 11 < b.length; i++){
+    if (b[i]===0x54 && b[i+1]===0x49 && b[i+2]===0x54 && b[i+3]===0x32){   // "TIT2"
+      var size = (b[i+4] << 24) | (b[i+5] << 16) | (b[i+6] << 8) | b[i+7];
+      if (size <= 0 || size > 400)                                          // sprobuj syncsafe (ID3v2.4)
+        size = ((b[i+4]&0x7f) << 21) | ((b[i+5]&0x7f) << 14) | ((b[i+6]&0x7f) << 7) | (b[i+7]&0x7f);
+      if (size <= 0 || size > 400) continue;
+      var enc = b[i+10];
+      var start = i + 11;
+      var end = start + (size - 1);
+      if (end > b.length) end = b.length;
+      var out = decodeId3Text(b, start, end, enc);
+      if (out) return out;
+    }
+  }
+  return null;
+}
+function decodeId3Text(b, start, end, enc){
+  var out = "", i;
+  if (enc === 1 || enc === 2){                       // UTF-16 (z BOM lub bez)
+    i = start;
+    var be = false;
+    if (b[i]===0xFF && b[i+1]===0xFE){ i += 2; }
+    else if (b[i]===0xFE && b[i+1]===0xFF){ be = true; i += 2; }
+    for (; i + 1 < end; i += 2){
+      var c = be ? ((b[i] << 8) | b[i+1]) : (b[i] | (b[i+1] << 8));
+      if (!c) break;
+      out += String.fromCharCode(c);
+    }
+    return out.trim();
+  }
+  var arr = b.subarray(start, end);                  // 0 = ISO-8859-1, 3 = UTF-8
+  try {
+    if (enc === 3 && typeof TextDecoder !== "undefined")
+      return new TextDecoder("utf-8").decode(arr).replace(/ +$/, "").trim();
+  } catch(e){}
+  for (i = 0; i < arr.length; i++){ if (arr[i] === 0) break; out += String.fromCharCode(arr[i]); }
+  return out.trim();
 }
 
 function updateStats(){
@@ -821,6 +947,14 @@ function playUrl(url){
         hlsInstance.on(Hls.Events.ERROR, function(ev, d){
           if (d.fatal && !stale()) onPlayerError();
         });
+        /* HLS: tytul utworu z metadanych ID3 (jesli stream je wysyla) */
+        if (Hls.Events.FRAG_PARSING_METADATA){
+          hlsInstance.on(Hls.Events.FRAG_PARSING_METADATA, function(ev, d){
+            if (stale()) return;
+            var t = extractId3Title(d);
+            if (t) setNpTrack(t);
+          });
+        }
         return true;
       } else if (a.canPlayType("application/vnd.apple.mpegurl")) {
         a.src = url; applyVolume();
@@ -975,10 +1109,10 @@ function clearFilters(){
 ══════════════════════════════════════════════════════════ */
 function onPlayStateChange(ns){
   stopConnectTimer();
-  if (ns === 3) setStatus("ok", "Na żywo");
-  else if (ns === 2)  setStatus("warn", "Wstrzymano");
+  if (ns === 3) { setStatus("ok", "Na żywo"); npTrackStart(); }
+  else if (ns === 2)  { setStatus("warn", "Wstrzymano"); npTrackStop(); }
   else if (ns === 6 || ns === 11) { setStatus("warn", "Buforowanie…"); armConnectTimer(); }
-  else if (ns === 1)  setStatus("", "Zatrzymane");
+  else if (ns === 1)  { setStatus("", "Zatrzymane"); npTrackStop(); }
   updatePlayButton(ns);
 }
 function onPlayerError(){
@@ -991,6 +1125,7 @@ function onPlayerError(){
 
   audioState = 1;
   setStatus("bad", navigator.onLine ? "Błąd · Stream niedostępny" : "Brak połączenia z internetem");
+  npTrackStop();
   updatePlayButton(1);
 }
 
