@@ -17,6 +17,7 @@
 ════════════════════════════════════════════════════════════ */
 (function () {
   var THEME_MODE = {
+    classic: "none", day: "none",
     green: "matrix", amber: "bokeh", cyan: "snow", synthwave: "grid",
     crimson: "petals", violet: "stars", cats: "cats", naruto: "leaves"
   };

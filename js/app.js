@@ -1359,7 +1359,7 @@ window.addEventListener("DOMContentLoaded", async function(){
   /* globus - ze stylem bieżącego motywu */
   try {
     globe = new RadioGlobe($("globeCanvas"));
-    globe.setTheme(document.documentElement.getAttribute("data-theme") || "green");
+    globe.setTheme(document.documentElement.getAttribute("data-theme") || "classic");
   } catch(e){ globe = null; }
 
   /* Service Worker - aplikacja działa jako PWA i startuje błyskawicznie
@@ -1431,9 +1431,10 @@ window.addEventListener("DOMContentLoaded", async function(){
 ════════════════════════════════════════════════════════════ */
 (function () {
   var THEME_COOKIE = "radioantomatee_theme";
-  var THEMES = ["green", "amber", "cyan", "synthwave", "crimson", "violet", "cats", "naruto"];
-  /* każdy motyw ma własny tryb tła (silnik w rain.js) */
+  var THEMES = ["classic", "day", "green", "amber", "cyan", "synthwave", "crimson", "violet", "cats", "naruto"];
+  /* każdy motyw ma własny tryb tła (silnik w rain.js); classic/day = brak tła */
   var THEME_BG = {
+    classic: "none", day: "none",
     green: "matrix", amber: "bokeh", cyan: "snow", synthwave: "grid",
     crimson: "petals", violet: "stars", cats: "cats", naruto: "leaves"
   };
@@ -1472,7 +1473,7 @@ window.addEventListener("DOMContentLoaded", async function(){
   }
 
   function applyTheme(name) {
-    if (THEMES.indexOf(name) < 0) name = "green";
+    if (THEMES.indexOf(name) < 0) name = "classic";
     document.documentElement.setAttribute("data-theme", name);
     updateMetaColor();
     markSelected(name);
@@ -1536,7 +1537,7 @@ window.addEventListener("DOMContentLoaded", async function(){
     } catch (e) {}
     if (saved) setCookie(THEME_COOKIE, saved, 365);
   }
-  applyTheme(saved || "green");
+  applyTheme(saved || "classic");
 
   function countActiveFilters() {
     var n = 0, f = state.filters;
@@ -1584,7 +1585,7 @@ window.addEventListener("DOMContentLoaded", async function(){
     bind(document, "keydown", function (e) {
       if ((e.keyCode || 0) === 27 && menu && !menu.hidden) { openMenu(false); if (bt) bt.focus(); }
     });
-    markSelected(document.documentElement.getAttribute("data-theme") || "green");
+    markSelected(document.documentElement.getAttribute("data-theme") || "classic");
 
     /* - rail filtrów: przycisk „Filtry” w nagłówku (mobile) rozwija rail - */
     var ft = $("btnFiltersMobile"), rail = $("filterRail");

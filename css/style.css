@@ -1,17 +1,18 @@
 /* ════════════════════════════════════════════════════════════
    RADIO ANTOMATEE - style.css
-   8 motywów (green/Matrix domyślny · violet/Kosmos · amber ·
-   cyan/Lód · synthwave · crimson · cats · naruto), wybór w cookie.
+   10 motywów: classic (Klasyczny, domyślny) · day (Dzień) · green
+   (Matrix) · violet (Kosmos) · amber · cyan/Lód · synthwave ·
+   crimson · cats · naruto. Wybór zapisywany w cookie.
    Każdy motyw ustawia tylko „ziarna" zmiennych, pochodne liczy
-   color-mix(). Panele unoszą się nad animowanym tłem (#rain).
+   color-mix(). Panele unoszą się nad animowanym tłem (#rain);
+   motywy „proste" (classic/day) mają --rain-op:0 (bez tła).
 ════════════════════════════════════════════════════════════ */
 
 /* ── 1. TOKENY MOTYWU ─────────────────────────────────────────
    Architektura: każdy motyw ustawia tylko „ziarna" (seeds), a
    wartości pochodne (linie, poświaty, cienie) liczy color-mix()
    z --accent. Dzięki temu nowy motyw = ~1 blok zmiennych.
-   Motywy: green (Matrix, domyślny) · amber · cyan · synthwave
-           · crimson · violet. Wybór zapisywany w cookie.
+   Domyślny to classic (ciemny, minimalistyczny, bez rainu).
 ──────────────────────────────────────────────────────────────── */
 :root{
   /* --- GREEN / MATRIX - ziarna domyślne --- */
@@ -46,6 +47,32 @@
   --serif:"Share Tech Mono", ui-monospace, monospace;  /* logo / nagłówki */
   --sans:"JetBrains Mono", ui-monospace, monospace;     /* UI / listy */
   --mono:"Share Tech Mono", ui-monospace, monospace;    /* odczyty */
+}
+
+/* --- CLASSIC (Klasyczny) - prosty motyw CIEMNY, DOMYŚLNY, bez tła --- */
+:root[data-theme="classic"]{
+  --bg:#0e1116; --bg-tint:#161b22; --paper:#1a212b; --paper-2:#212a36;
+  --ink:#e6edf3; --ink-2:#c2ccd6; --muted:#9aa7b4; --muted-2:#7d8b98;
+  --accent:#4a9eff; --accent-deep:#2f7fe0; --accent-amber:#9ecbff;
+  --on-accent:#04121f; --star:#9ecbff;
+  --chrome-1:#161c24; --chrome-2:#0f141b;
+  --chrome-ink:#e6edf3; --chrome-soft:#aeb9c4; --chrome-mut:#8592a0;
+  --globe-rgb:120,170,255; --globe-core:#dbe9ff; --rain:#4a9eff;
+  --rain-op:0; --crt-op:0;
+}
+
+/* --- DAY (Dzień) - prosty motyw JASNY, bez tła --- */
+:root[data-theme="day"]{
+  --bg:#f6f8fa; --bg-tint:#eceff3; --paper:#ffffff; --paper-2:#f2f5f8;
+  --ink:#1b2330; --ink-2:#33404f; --muted:#46535f; --muted-2:#5b6875;
+  --accent:#2563eb; --accent-deep:#1d4ed8; --accent-amber:#7aa7ff;
+  --on-accent:#ffffff; --star:#2563eb;
+  --chrome-1:#eef2f6; --chrome-2:#e3e9ef;
+  --chrome-ink:#1b2330; --chrome-soft:#42505f; --chrome-mut:#5b6875;
+  --globe-rgb:37,99,235; --globe-core:#12305e;
+  --globe-bg:radial-gradient(135% 135% at 50% 12%, #ffffff 0%, #eef3f8 46%, #dde6ef 100%);
+  --globe-bg-shade:rgba(40,70,120,.14);
+  --rain:#2563eb; --rain-op:0; --rain-bg:transparent; --crt-op:0;
 }
 
 /* --- AMBER (bursztyn) - motyw JASNY (miód/krem) --- */
