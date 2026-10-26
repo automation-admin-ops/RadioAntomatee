@@ -21,7 +21,13 @@
 
   try {
     firebase.initializeApp(config);
-    window.RadioFB = { db: firebase.database(), uid: null };
+    var db = firebase.database();
+    /* Tylko WebSocket, bez zapasowego "long-polling": po JEDNEJ nieudanej próbie WebSocket SDK zapisuje
+       w localStorage "firebase:previous_websocket_failure" i odtąd łączy się long-pollingiem, który ładuje
+       skrypty z *.firebasedatabase.app - a CSP strony (script-src 'self') je blokuje. Czat zostawał wtedy
+       na zawsze pusty i bez możliwości pisania (zgłoszenie 2026-10-26). */
+    db.INTERNAL.forceWebSockets();
+    window.RadioFB = { db: db, uid: null };
 
     firebase.auth().onAuthStateChanged(function (user) {
       if (user) {
